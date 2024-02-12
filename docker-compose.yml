@@ -13,7 +13,7 @@ services:
       - backend
 
   backend:
-    image: golang:1.17-alpine
+    image: golang:1.20-alpine
     working_dir: /app
     volumes:
       - ./backend:/app
