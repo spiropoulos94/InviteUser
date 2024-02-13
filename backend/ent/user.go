@@ -30,28 +30,39 @@ type User struct {
 
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
-	// Groups holds the value of the groups edge.
-	Groups []*Team `json:"groups,omitempty"`
+	// Teams holds the value of the teams edge.
+	Teams []*Team `json:"teams,omitempty"`
+	// Company holds the value of the company edge.
+	Company []*Company `json:"company,omitempty"`
 	// Invitations holds the value of the invitations edge.
 	Invitations []*Invitation `json:"invitations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
-// GroupsOrErr returns the Groups value or an error if the edge
+// TeamsOrErr returns the Teams value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) GroupsOrErr() ([]*Team, error) {
+func (e UserEdges) TeamsOrErr() ([]*Team, error) {
 	if e.loadedTypes[0] {
-		return e.Groups, nil
+		return e.Teams, nil
 	}
-	return nil, &NotLoadedError{edge: "groups"}
+	return nil, &NotLoadedError{edge: "teams"}
+}
+
+// CompanyOrErr returns the Company value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CompanyOrErr() ([]*Company, error) {
+	if e.loadedTypes[1] {
+		return e.Company, nil
+	}
+	return nil, &NotLoadedError{edge: "company"}
 }
 
 // InvitationsOrErr returns the Invitations value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) InvitationsOrErr() ([]*Invitation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Invitations, nil
 	}
 	return nil, &NotLoadedError{edge: "invitations"}
@@ -118,9 +129,14 @@ func (u *User) Value(name string) (ent.Value, error) {
 	return u.selectValues.Get(name)
 }
 
-// QueryGroups queries the "groups" edge of the User entity.
-func (u *User) QueryGroups() *TeamQuery {
-	return NewUserClient(u.config).QueryGroups(u)
+// QueryTeams queries the "teams" edge of the User entity.
+func (u *User) QueryTeams() *TeamQuery {
+	return NewUserClient(u.config).QueryTeams(u)
+}
+
+// QueryCompany queries the "company" edge of the User entity.
+func (u *User) QueryCompany() *CompanyQuery {
+	return NewUserClient(u.config).QueryCompany(u)
 }
 
 // QueryInvitations queries the "invitations" edge of the User entity.

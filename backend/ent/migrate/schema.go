@@ -66,6 +66,31 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
+	// CompanyUsersColumns holds the columns for the "company_users" table.
+	CompanyUsersColumns = []*schema.Column{
+		{Name: "company_id", Type: field.TypeInt},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// CompanyUsersTable holds the schema information for the "company_users" table.
+	CompanyUsersTable = &schema.Table{
+		Name:       "company_users",
+		Columns:    CompanyUsersColumns,
+		PrimaryKey: []*schema.Column{CompanyUsersColumns[0], CompanyUsersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "company_users_company_id",
+				Columns:    []*schema.Column{CompanyUsersColumns[0]},
+				RefColumns: []*schema.Column{CompaniesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "company_users_user_id",
+				Columns:    []*schema.Column{CompanyUsersColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// TeamUsersColumns holds the columns for the "team_users" table.
 	TeamUsersColumns = []*schema.Column{
 		{Name: "team_id", Type: field.TypeInt},
@@ -97,12 +122,15 @@ var (
 		InvitationsTable,
 		TeamsTable,
 		UsersTable,
+		CompanyUsersTable,
 		TeamUsersTable,
 	}
 )
 
 func init() {
 	InvitationsTable.ForeignKeys[0].RefTable = UsersTable
+	CompanyUsersTable.ForeignKeys[0].RefTable = CompaniesTable
+	CompanyUsersTable.ForeignKeys[1].RefTable = UsersTable
 	TeamUsersTable.ForeignKeys[0].RefTable = TeamsTable
 	TeamUsersTable.ForeignKeys[1].RefTable = UsersTable
 }

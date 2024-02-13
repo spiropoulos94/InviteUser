@@ -42,6 +42,9 @@ type CompanyMutation struct {
 	name          *string
 	domain        *string
 	clearedFields map[string]struct{}
+	users         map[int]struct{}
+	removedusers  map[int]struct{}
+	clearedusers  bool
 	done          bool
 	oldValue      func(context.Context) (*Company, error)
 	predicates    []predicate.Company
@@ -217,6 +220,60 @@ func (m *CompanyMutation) ResetDomain() {
 	m.domain = nil
 }
 
+// AddUserIDs adds the "users" edge to the User entity by ids.
+func (m *CompanyMutation) AddUserIDs(ids ...int) {
+	if m.users == nil {
+		m.users = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.users[ids[i]] = struct{}{}
+	}
+}
+
+// ClearUsers clears the "users" edge to the User entity.
+func (m *CompanyMutation) ClearUsers() {
+	m.clearedusers = true
+}
+
+// UsersCleared reports if the "users" edge to the User entity was cleared.
+func (m *CompanyMutation) UsersCleared() bool {
+	return m.clearedusers
+}
+
+// RemoveUserIDs removes the "users" edge to the User entity by IDs.
+func (m *CompanyMutation) RemoveUserIDs(ids ...int) {
+	if m.removedusers == nil {
+		m.removedusers = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.users, ids[i])
+		m.removedusers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedUsers returns the removed IDs of the "users" edge to the User entity.
+func (m *CompanyMutation) RemovedUsersIDs() (ids []int) {
+	for id := range m.removedusers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// UsersIDs returns the "users" edge IDs in the mutation.
+func (m *CompanyMutation) UsersIDs() (ids []int) {
+	for id := range m.users {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetUsers resets all changes to the "users" edge.
+func (m *CompanyMutation) ResetUsers() {
+	m.users = nil
+	m.clearedusers = false
+	m.removedusers = nil
+}
+
 // Where appends a list predicates to the CompanyMutation builder.
 func (m *CompanyMutation) Where(ps ...predicate.Company) {
 	m.predicates = append(m.predicates, ps...)
@@ -367,49 +424,85 @@ func (m *CompanyMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CompanyMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.users != nil {
+		edges = append(edges, company.EdgeUsers)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *CompanyMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case company.EdgeUsers:
+		ids := make([]ent.Value, 0, len(m.users))
+		for id := range m.users {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CompanyMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedusers != nil {
+		edges = append(edges, company.EdgeUsers)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *CompanyMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case company.EdgeUsers:
+		ids := make([]ent.Value, 0, len(m.removedusers))
+		for id := range m.removedusers {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CompanyMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedusers {
+		edges = append(edges, company.EdgeUsers)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *CompanyMutation) EdgeCleared(name string) bool {
+	switch name {
+	case company.EdgeUsers:
+		return m.clearedusers
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *CompanyMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Company unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *CompanyMutation) ResetEdge(name string) error {
+	switch name {
+	case company.EdgeUsers:
+		m.ResetUsers()
+		return nil
+	}
 	return fmt.Errorf("unknown Company edge %s", name)
 }
 
@@ -1343,9 +1436,12 @@ type UserMutation struct {
 	email              *string
 	password           *string
 	clearedFields      map[string]struct{}
-	groups             map[int]struct{}
-	removedgroups      map[int]struct{}
-	clearedgroups      bool
+	teams              map[int]struct{}
+	removedteams       map[int]struct{}
+	clearedteams       bool
+	company            map[int]struct{}
+	removedcompany     map[int]struct{}
+	clearedcompany     bool
 	invitations        map[int]struct{}
 	removedinvitations map[int]struct{}
 	clearedinvitations bool
@@ -1560,58 +1656,112 @@ func (m *UserMutation) ResetPassword() {
 	m.password = nil
 }
 
-// AddGroupIDs adds the "groups" edge to the Team entity by ids.
-func (m *UserMutation) AddGroupIDs(ids ...int) {
-	if m.groups == nil {
-		m.groups = make(map[int]struct{})
+// AddTeamIDs adds the "teams" edge to the Team entity by ids.
+func (m *UserMutation) AddTeamIDs(ids ...int) {
+	if m.teams == nil {
+		m.teams = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.groups[ids[i]] = struct{}{}
+		m.teams[ids[i]] = struct{}{}
 	}
 }
 
-// ClearGroups clears the "groups" edge to the Team entity.
-func (m *UserMutation) ClearGroups() {
-	m.clearedgroups = true
+// ClearTeams clears the "teams" edge to the Team entity.
+func (m *UserMutation) ClearTeams() {
+	m.clearedteams = true
 }
 
-// GroupsCleared reports if the "groups" edge to the Team entity was cleared.
-func (m *UserMutation) GroupsCleared() bool {
-	return m.clearedgroups
+// TeamsCleared reports if the "teams" edge to the Team entity was cleared.
+func (m *UserMutation) TeamsCleared() bool {
+	return m.clearedteams
 }
 
-// RemoveGroupIDs removes the "groups" edge to the Team entity by IDs.
-func (m *UserMutation) RemoveGroupIDs(ids ...int) {
-	if m.removedgroups == nil {
-		m.removedgroups = make(map[int]struct{})
+// RemoveTeamIDs removes the "teams" edge to the Team entity by IDs.
+func (m *UserMutation) RemoveTeamIDs(ids ...int) {
+	if m.removedteams == nil {
+		m.removedteams = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.groups, ids[i])
-		m.removedgroups[ids[i]] = struct{}{}
+		delete(m.teams, ids[i])
+		m.removedteams[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedGroups returns the removed IDs of the "groups" edge to the Team entity.
-func (m *UserMutation) RemovedGroupsIDs() (ids []int) {
-	for id := range m.removedgroups {
+// RemovedTeams returns the removed IDs of the "teams" edge to the Team entity.
+func (m *UserMutation) RemovedTeamsIDs() (ids []int) {
+	for id := range m.removedteams {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// GroupsIDs returns the "groups" edge IDs in the mutation.
-func (m *UserMutation) GroupsIDs() (ids []int) {
-	for id := range m.groups {
+// TeamsIDs returns the "teams" edge IDs in the mutation.
+func (m *UserMutation) TeamsIDs() (ids []int) {
+	for id := range m.teams {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetGroups resets all changes to the "groups" edge.
-func (m *UserMutation) ResetGroups() {
-	m.groups = nil
-	m.clearedgroups = false
-	m.removedgroups = nil
+// ResetTeams resets all changes to the "teams" edge.
+func (m *UserMutation) ResetTeams() {
+	m.teams = nil
+	m.clearedteams = false
+	m.removedteams = nil
+}
+
+// AddCompanyIDs adds the "company" edge to the Company entity by ids.
+func (m *UserMutation) AddCompanyIDs(ids ...int) {
+	if m.company == nil {
+		m.company = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.company[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCompany clears the "company" edge to the Company entity.
+func (m *UserMutation) ClearCompany() {
+	m.clearedcompany = true
+}
+
+// CompanyCleared reports if the "company" edge to the Company entity was cleared.
+func (m *UserMutation) CompanyCleared() bool {
+	return m.clearedcompany
+}
+
+// RemoveCompanyIDs removes the "company" edge to the Company entity by IDs.
+func (m *UserMutation) RemoveCompanyIDs(ids ...int) {
+	if m.removedcompany == nil {
+		m.removedcompany = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.company, ids[i])
+		m.removedcompany[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCompany returns the removed IDs of the "company" edge to the Company entity.
+func (m *UserMutation) RemovedCompanyIDs() (ids []int) {
+	for id := range m.removedcompany {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CompanyIDs returns the "company" edge IDs in the mutation.
+func (m *UserMutation) CompanyIDs() (ids []int) {
+	for id := range m.company {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCompany resets all changes to the "company" edge.
+func (m *UserMutation) ResetCompany() {
+	m.company = nil
+	m.clearedcompany = false
+	m.removedcompany = nil
 }
 
 // AddInvitationIDs adds the "invitations" edge to the Invitation entity by ids.
@@ -1835,9 +1985,12 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.groups != nil {
-		edges = append(edges, user.EdgeGroups)
+	edges := make([]string, 0, 3)
+	if m.teams != nil {
+		edges = append(edges, user.EdgeTeams)
+	}
+	if m.company != nil {
+		edges = append(edges, user.EdgeCompany)
 	}
 	if m.invitations != nil {
 		edges = append(edges, user.EdgeInvitations)
@@ -1849,9 +2002,15 @@ func (m *UserMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case user.EdgeGroups:
-		ids := make([]ent.Value, 0, len(m.groups))
-		for id := range m.groups {
+	case user.EdgeTeams:
+		ids := make([]ent.Value, 0, len(m.teams))
+		for id := range m.teams {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCompany:
+		ids := make([]ent.Value, 0, len(m.company))
+		for id := range m.company {
 			ids = append(ids, id)
 		}
 		return ids
@@ -1867,9 +2026,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.removedgroups != nil {
-		edges = append(edges, user.EdgeGroups)
+	edges := make([]string, 0, 3)
+	if m.removedteams != nil {
+		edges = append(edges, user.EdgeTeams)
+	}
+	if m.removedcompany != nil {
+		edges = append(edges, user.EdgeCompany)
 	}
 	if m.removedinvitations != nil {
 		edges = append(edges, user.EdgeInvitations)
@@ -1881,9 +2043,15 @@ func (m *UserMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case user.EdgeGroups:
-		ids := make([]ent.Value, 0, len(m.removedgroups))
-		for id := range m.removedgroups {
+	case user.EdgeTeams:
+		ids := make([]ent.Value, 0, len(m.removedteams))
+		for id := range m.removedteams {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCompany:
+		ids := make([]ent.Value, 0, len(m.removedcompany))
+		for id := range m.removedcompany {
 			ids = append(ids, id)
 		}
 		return ids
@@ -1899,9 +2067,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedgroups {
-		edges = append(edges, user.EdgeGroups)
+	edges := make([]string, 0, 3)
+	if m.clearedteams {
+		edges = append(edges, user.EdgeTeams)
+	}
+	if m.clearedcompany {
+		edges = append(edges, user.EdgeCompany)
 	}
 	if m.clearedinvitations {
 		edges = append(edges, user.EdgeInvitations)
@@ -1913,8 +2084,10 @@ func (m *UserMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
-	case user.EdgeGroups:
-		return m.clearedgroups
+	case user.EdgeTeams:
+		return m.clearedteams
+	case user.EdgeCompany:
+		return m.clearedcompany
 	case user.EdgeInvitations:
 		return m.clearedinvitations
 	}
@@ -1933,8 +2106,11 @@ func (m *UserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
-	case user.EdgeGroups:
-		m.ResetGroups()
+	case user.EdgeTeams:
+		m.ResetTeams()
+		return nil
+	case user.EdgeCompany:
+		m.ResetCompany()
 		return nil
 	case user.EdgeInvitations:
 		m.ResetInvitations()

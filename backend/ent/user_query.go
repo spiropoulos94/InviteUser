@@ -7,6 +7,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
+	"spiropoulos94/emailchaser/invite/ent/company"
 	"spiropoulos94/emailchaser/invite/ent/invitation"
 	"spiropoulos94/emailchaser/invite/ent/predicate"
 	"spiropoulos94/emailchaser/invite/ent/team"
@@ -24,7 +25,8 @@ type UserQuery struct {
 	order           []user.OrderOption
 	inters          []Interceptor
 	predicates      []predicate.User
-	withGroups      *TeamQuery
+	withTeams       *TeamQuery
+	withCompany     *CompanyQuery
 	withInvitations *InvitationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -62,8 +64,8 @@ func (uq *UserQuery) Order(o ...user.OrderOption) *UserQuery {
 	return uq
 }
 
-// QueryGroups chains the current query on the "groups" edge.
-func (uq *UserQuery) QueryGroups() *TeamQuery {
+// QueryTeams chains the current query on the "teams" edge.
+func (uq *UserQuery) QueryTeams() *TeamQuery {
 	query := (&TeamClient{config: uq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := uq.prepareQuery(ctx); err != nil {
@@ -76,7 +78,29 @@ func (uq *UserQuery) QueryGroups() *TeamQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(team.Table, team.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.GroupsTable, user.GroupsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2M, true, user.TeamsTable, user.TeamsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCompany chains the current query on the "company" edge.
+func (uq *UserQuery) QueryCompany() *CompanyQuery {
+	query := (&CompanyClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(company.Table, company.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, user.CompanyTable, user.CompanyPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -298,7 +322,8 @@ func (uq *UserQuery) Clone() *UserQuery {
 		order:           append([]user.OrderOption{}, uq.order...),
 		inters:          append([]Interceptor{}, uq.inters...),
 		predicates:      append([]predicate.User{}, uq.predicates...),
-		withGroups:      uq.withGroups.Clone(),
+		withTeams:       uq.withTeams.Clone(),
+		withCompany:     uq.withCompany.Clone(),
 		withInvitations: uq.withInvitations.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
@@ -306,14 +331,25 @@ func (uq *UserQuery) Clone() *UserQuery {
 	}
 }
 
-// WithGroups tells the query-builder to eager-load the nodes that are connected to
-// the "groups" edge. The optional arguments are used to configure the query builder of the edge.
-func (uq *UserQuery) WithGroups(opts ...func(*TeamQuery)) *UserQuery {
+// WithTeams tells the query-builder to eager-load the nodes that are connected to
+// the "teams" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithTeams(opts ...func(*TeamQuery)) *UserQuery {
 	query := (&TeamClient{config: uq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	uq.withGroups = query
+	uq.withTeams = query
+	return uq
+}
+
+// WithCompany tells the query-builder to eager-load the nodes that are connected to
+// the "company" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithCompany(opts ...func(*CompanyQuery)) *UserQuery {
+	query := (&CompanyClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withCompany = query
 	return uq
 }
 
@@ -406,8 +442,9 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [2]bool{
-			uq.withGroups != nil,
+		loadedTypes = [3]bool{
+			uq.withTeams != nil,
+			uq.withCompany != nil,
 			uq.withInvitations != nil,
 		}
 	)
@@ -429,10 +466,17 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := uq.withGroups; query != nil {
-		if err := uq.loadGroups(ctx, query, nodes,
-			func(n *User) { n.Edges.Groups = []*Team{} },
-			func(n *User, e *Team) { n.Edges.Groups = append(n.Edges.Groups, e) }); err != nil {
+	if query := uq.withTeams; query != nil {
+		if err := uq.loadTeams(ctx, query, nodes,
+			func(n *User) { n.Edges.Teams = []*Team{} },
+			func(n *User, e *Team) { n.Edges.Teams = append(n.Edges.Teams, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withCompany; query != nil {
+		if err := uq.loadCompany(ctx, query, nodes,
+			func(n *User) { n.Edges.Company = []*Company{} },
+			func(n *User, e *Company) { n.Edges.Company = append(n.Edges.Company, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -446,7 +490,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	return nodes, nil
 }
 
-func (uq *UserQuery) loadGroups(ctx context.Context, query *TeamQuery, nodes []*User, init func(*User), assign func(*User, *Team)) error {
+func (uq *UserQuery) loadTeams(ctx context.Context, query *TeamQuery, nodes []*User, init func(*User), assign func(*User, *Team)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
 	byID := make(map[int]*User)
 	nids := make(map[int]map[*User]struct{})
@@ -458,11 +502,11 @@ func (uq *UserQuery) loadGroups(ctx context.Context, query *TeamQuery, nodes []*
 		}
 	}
 	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(user.GroupsTable)
-		s.Join(joinT).On(s.C(team.FieldID), joinT.C(user.GroupsPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(user.GroupsPrimaryKey[1]), edgeIDs...))
+		joinT := sql.Table(user.TeamsTable)
+		s.Join(joinT).On(s.C(team.FieldID), joinT.C(user.TeamsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(user.TeamsPrimaryKey[1]), edgeIDs...))
 		columns := s.SelectedColumns()
-		s.Select(joinT.C(user.GroupsPrimaryKey[1]))
+		s.Select(joinT.C(user.TeamsPrimaryKey[1]))
 		s.AppendSelect(columns...)
 		s.SetDistinct(false)
 	})
@@ -499,7 +543,68 @@ func (uq *UserQuery) loadGroups(ctx context.Context, query *TeamQuery, nodes []*
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "groups" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "teams" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (uq *UserQuery) loadCompany(ctx context.Context, query *CompanyQuery, nodes []*User, init func(*User), assign func(*User, *Company)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[int]*User)
+	nids := make(map[int]map[*User]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(user.CompanyTable)
+		s.Join(joinT).On(s.C(company.FieldID), joinT.C(user.CompanyPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(user.CompanyPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(user.CompanyPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullInt64)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := int(values[0].(*sql.NullInt64).Int64)
+				inValue := int(values[1].(*sql.NullInt64).Int64)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*User]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Company](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "company" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

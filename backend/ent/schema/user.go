@@ -23,7 +23,7 @@ func (User) Fields() []ent.Field {
 // Edges of the User.
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("groups", Team.Type).
+		edge.From("teams", Team.Type).
 			Ref("users"),
 		edge.To("invitations", Invitation.Type),
 	}

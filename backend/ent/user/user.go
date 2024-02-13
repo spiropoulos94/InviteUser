@@ -18,17 +18,24 @@ const (
 	FieldEmail = "email"
 	// FieldPassword holds the string denoting the password field in the database.
 	FieldPassword = "password"
-	// EdgeGroups holds the string denoting the groups edge name in mutations.
-	EdgeGroups = "groups"
+	// EdgeTeams holds the string denoting the teams edge name in mutations.
+	EdgeTeams = "teams"
+	// EdgeCompany holds the string denoting the company edge name in mutations.
+	EdgeCompany = "company"
 	// EdgeInvitations holds the string denoting the invitations edge name in mutations.
 	EdgeInvitations = "invitations"
 	// Table holds the table name of the user in the database.
 	Table = "users"
-	// GroupsTable is the table that holds the groups relation/edge. The primary key declared below.
-	GroupsTable = "team_users"
-	// GroupsInverseTable is the table name for the Team entity.
+	// TeamsTable is the table that holds the teams relation/edge. The primary key declared below.
+	TeamsTable = "team_users"
+	// TeamsInverseTable is the table name for the Team entity.
 	// It exists in this package in order to avoid circular dependency with the "team" package.
-	GroupsInverseTable = "teams"
+	TeamsInverseTable = "teams"
+	// CompanyTable is the table that holds the company relation/edge. The primary key declared below.
+	CompanyTable = "company_users"
+	// CompanyInverseTable is the table name for the Company entity.
+	// It exists in this package in order to avoid circular dependency with the "company" package.
+	CompanyInverseTable = "companies"
 	// InvitationsTable is the table that holds the invitations relation/edge.
 	InvitationsTable = "invitations"
 	// InvitationsInverseTable is the table name for the Invitation entity.
@@ -47,9 +54,12 @@ var Columns = []string{
 }
 
 var (
-	// GroupsPrimaryKey and GroupsColumn2 are the table columns denoting the
-	// primary key for the groups relation (M2M).
-	GroupsPrimaryKey = []string{"team_id", "user_id"}
+	// TeamsPrimaryKey and TeamsColumn2 are the table columns denoting the
+	// primary key for the teams relation (M2M).
+	TeamsPrimaryKey = []string{"team_id", "user_id"}
+	// CompanyPrimaryKey and CompanyColumn2 are the table columns denoting the
+	// primary key for the company relation (M2M).
+	CompanyPrimaryKey = []string{"company_id", "user_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -85,17 +95,31 @@ func ByPassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPassword, opts...).ToFunc()
 }
 
-// ByGroupsCount orders the results by groups count.
-func ByGroupsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByTeamsCount orders the results by teams count.
+func ByTeamsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newGroupsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newTeamsStep(), opts...)
 	}
 }
 
-// ByGroups orders the results by groups terms.
-func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByTeams orders the results by teams terms.
+func ByTeams(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newTeamsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCompanyCount orders the results by company count.
+func ByCompanyCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCompanyStep(), opts...)
+	}
+}
+
+// ByCompany orders the results by company terms.
+func ByCompany(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCompanyStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -112,11 +136,18 @@ func ByInvitations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newInvitationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newGroupsStep() *sqlgraph.Step {
+func newTeamsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GroupsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, GroupsTable, GroupsPrimaryKey...),
+		sqlgraph.To(TeamsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, TeamsTable, TeamsPrimaryKey...),
+	)
+}
+func newCompanyStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CompanyInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, CompanyTable, CompanyPrimaryKey...),
 	)
 }
 func newInvitationsStep() *sqlgraph.Step {

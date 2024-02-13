@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"spiropoulos94/emailchaser/invite/ent/company"
 	"spiropoulos94/emailchaser/invite/ent/invitation"
 	"spiropoulos94/emailchaser/invite/ent/team"
 	"spiropoulos94/emailchaser/invite/ent/user"
@@ -39,19 +40,34 @@ func (uc *UserCreate) SetPassword(s string) *UserCreate {
 	return uc
 }
 
-// AddGroupIDs adds the "groups" edge to the Team entity by IDs.
-func (uc *UserCreate) AddGroupIDs(ids ...int) *UserCreate {
-	uc.mutation.AddGroupIDs(ids...)
+// AddTeamIDs adds the "teams" edge to the Team entity by IDs.
+func (uc *UserCreate) AddTeamIDs(ids ...int) *UserCreate {
+	uc.mutation.AddTeamIDs(ids...)
 	return uc
 }
 
-// AddGroups adds the "groups" edges to the Team entity.
-func (uc *UserCreate) AddGroups(t ...*Team) *UserCreate {
+// AddTeams adds the "teams" edges to the Team entity.
+func (uc *UserCreate) AddTeams(t ...*Team) *UserCreate {
 	ids := make([]int, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
-	return uc.AddGroupIDs(ids...)
+	return uc.AddTeamIDs(ids...)
+}
+
+// AddCompanyIDs adds the "company" edge to the Company entity by IDs.
+func (uc *UserCreate) AddCompanyIDs(ids ...int) *UserCreate {
+	uc.mutation.AddCompanyIDs(ids...)
+	return uc
+}
+
+// AddCompany adds the "company" edges to the Company entity.
+func (uc *UserCreate) AddCompany(c ...*Company) *UserCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uc.AddCompanyIDs(ids...)
 }
 
 // AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
@@ -150,15 +166,31 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldPassword, field.TypeString, value)
 		_node.Password = value
 	}
-	if nodes := uc.mutation.GroupsIDs(); len(nodes) > 0 {
+	if nodes := uc.mutation.TeamsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   user.GroupsTable,
-			Columns: user.GroupsPrimaryKey,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.CompanyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.CompanyTable,
+			Columns: user.CompanyPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

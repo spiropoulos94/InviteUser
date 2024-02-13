@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"spiropoulos94/emailchaser/invite/ent/company"
 	"spiropoulos94/emailchaser/invite/ent/invitation"
 	"spiropoulos94/emailchaser/invite/ent/predicate"
 	"spiropoulos94/emailchaser/invite/ent/team"
@@ -71,19 +72,34 @@ func (uu *UserUpdate) SetNillablePassword(s *string) *UserUpdate {
 	return uu
 }
 
-// AddGroupIDs adds the "groups" edge to the Team entity by IDs.
-func (uu *UserUpdate) AddGroupIDs(ids ...int) *UserUpdate {
-	uu.mutation.AddGroupIDs(ids...)
+// AddTeamIDs adds the "teams" edge to the Team entity by IDs.
+func (uu *UserUpdate) AddTeamIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddTeamIDs(ids...)
 	return uu
 }
 
-// AddGroups adds the "groups" edges to the Team entity.
-func (uu *UserUpdate) AddGroups(t ...*Team) *UserUpdate {
+// AddTeams adds the "teams" edges to the Team entity.
+func (uu *UserUpdate) AddTeams(t ...*Team) *UserUpdate {
 	ids := make([]int, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
-	return uu.AddGroupIDs(ids...)
+	return uu.AddTeamIDs(ids...)
+}
+
+// AddCompanyIDs adds the "company" edge to the Company entity by IDs.
+func (uu *UserUpdate) AddCompanyIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddCompanyIDs(ids...)
+	return uu
+}
+
+// AddCompany adds the "company" edges to the Company entity.
+func (uu *UserUpdate) AddCompany(c ...*Company) *UserUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.AddCompanyIDs(ids...)
 }
 
 // AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
@@ -106,25 +122,46 @@ func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
 }
 
-// ClearGroups clears all "groups" edges to the Team entity.
-func (uu *UserUpdate) ClearGroups() *UserUpdate {
-	uu.mutation.ClearGroups()
+// ClearTeams clears all "teams" edges to the Team entity.
+func (uu *UserUpdate) ClearTeams() *UserUpdate {
+	uu.mutation.ClearTeams()
 	return uu
 }
 
-// RemoveGroupIDs removes the "groups" edge to Team entities by IDs.
-func (uu *UserUpdate) RemoveGroupIDs(ids ...int) *UserUpdate {
-	uu.mutation.RemoveGroupIDs(ids...)
+// RemoveTeamIDs removes the "teams" edge to Team entities by IDs.
+func (uu *UserUpdate) RemoveTeamIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveTeamIDs(ids...)
 	return uu
 }
 
-// RemoveGroups removes "groups" edges to Team entities.
-func (uu *UserUpdate) RemoveGroups(t ...*Team) *UserUpdate {
+// RemoveTeams removes "teams" edges to Team entities.
+func (uu *UserUpdate) RemoveTeams(t ...*Team) *UserUpdate {
 	ids := make([]int, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
-	return uu.RemoveGroupIDs(ids...)
+	return uu.RemoveTeamIDs(ids...)
+}
+
+// ClearCompany clears all "company" edges to the Company entity.
+func (uu *UserUpdate) ClearCompany() *UserUpdate {
+	uu.mutation.ClearCompany()
+	return uu
+}
+
+// RemoveCompanyIDs removes the "company" edge to Company entities by IDs.
+func (uu *UserUpdate) RemoveCompanyIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveCompanyIDs(ids...)
+	return uu
+}
+
+// RemoveCompany removes "company" edges to Company entities.
+func (uu *UserUpdate) RemoveCompany(c ...*Company) *UserUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uu.RemoveCompanyIDs(ids...)
 }
 
 // ClearInvitations clears all "invitations" edges to the Invitation entity.
@@ -193,12 +230,12 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.Password(); ok {
 		_spec.SetField(user.FieldPassword, field.TypeString, value)
 	}
-	if uu.mutation.GroupsCleared() {
+	if uu.mutation.TeamsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   user.GroupsTable,
-			Columns: user.GroupsPrimaryKey,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
@@ -206,12 +243,12 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := uu.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !uu.mutation.GroupsCleared() {
+	if nodes := uu.mutation.RemovedTeamsIDs(); len(nodes) > 0 && !uu.mutation.TeamsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   user.GroupsTable,
-			Columns: user.GroupsPrimaryKey,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
@@ -222,15 +259,60 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := uu.mutation.GroupsIDs(); len(nodes) > 0 {
+	if nodes := uu.mutation.TeamsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   user.GroupsTable,
-			Columns: user.GroupsPrimaryKey,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.CompanyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.CompanyTable,
+			Columns: user.CompanyPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedCompanyIDs(); len(nodes) > 0 && !uu.mutation.CompanyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.CompanyTable,
+			Columns: user.CompanyPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.CompanyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.CompanyTable,
+			Columns: user.CompanyPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -345,19 +427,34 @@ func (uuo *UserUpdateOne) SetNillablePassword(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// AddGroupIDs adds the "groups" edge to the Team entity by IDs.
-func (uuo *UserUpdateOne) AddGroupIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.AddGroupIDs(ids...)
+// AddTeamIDs adds the "teams" edge to the Team entity by IDs.
+func (uuo *UserUpdateOne) AddTeamIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddTeamIDs(ids...)
 	return uuo
 }
 
-// AddGroups adds the "groups" edges to the Team entity.
-func (uuo *UserUpdateOne) AddGroups(t ...*Team) *UserUpdateOne {
+// AddTeams adds the "teams" edges to the Team entity.
+func (uuo *UserUpdateOne) AddTeams(t ...*Team) *UserUpdateOne {
 	ids := make([]int, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
-	return uuo.AddGroupIDs(ids...)
+	return uuo.AddTeamIDs(ids...)
+}
+
+// AddCompanyIDs adds the "company" edge to the Company entity by IDs.
+func (uuo *UserUpdateOne) AddCompanyIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddCompanyIDs(ids...)
+	return uuo
+}
+
+// AddCompany adds the "company" edges to the Company entity.
+func (uuo *UserUpdateOne) AddCompany(c ...*Company) *UserUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.AddCompanyIDs(ids...)
 }
 
 // AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
@@ -380,25 +477,46 @@ func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
 }
 
-// ClearGroups clears all "groups" edges to the Team entity.
-func (uuo *UserUpdateOne) ClearGroups() *UserUpdateOne {
-	uuo.mutation.ClearGroups()
+// ClearTeams clears all "teams" edges to the Team entity.
+func (uuo *UserUpdateOne) ClearTeams() *UserUpdateOne {
+	uuo.mutation.ClearTeams()
 	return uuo
 }
 
-// RemoveGroupIDs removes the "groups" edge to Team entities by IDs.
-func (uuo *UserUpdateOne) RemoveGroupIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.RemoveGroupIDs(ids...)
+// RemoveTeamIDs removes the "teams" edge to Team entities by IDs.
+func (uuo *UserUpdateOne) RemoveTeamIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveTeamIDs(ids...)
 	return uuo
 }
 
-// RemoveGroups removes "groups" edges to Team entities.
-func (uuo *UserUpdateOne) RemoveGroups(t ...*Team) *UserUpdateOne {
+// RemoveTeams removes "teams" edges to Team entities.
+func (uuo *UserUpdateOne) RemoveTeams(t ...*Team) *UserUpdateOne {
 	ids := make([]int, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
-	return uuo.RemoveGroupIDs(ids...)
+	return uuo.RemoveTeamIDs(ids...)
+}
+
+// ClearCompany clears all "company" edges to the Company entity.
+func (uuo *UserUpdateOne) ClearCompany() *UserUpdateOne {
+	uuo.mutation.ClearCompany()
+	return uuo
+}
+
+// RemoveCompanyIDs removes the "company" edge to Company entities by IDs.
+func (uuo *UserUpdateOne) RemoveCompanyIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveCompanyIDs(ids...)
+	return uuo
+}
+
+// RemoveCompany removes "company" edges to Company entities.
+func (uuo *UserUpdateOne) RemoveCompany(c ...*Company) *UserUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return uuo.RemoveCompanyIDs(ids...)
 }
 
 // ClearInvitations clears all "invitations" edges to the Invitation entity.
@@ -497,12 +615,12 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.Password(); ok {
 		_spec.SetField(user.FieldPassword, field.TypeString, value)
 	}
-	if uuo.mutation.GroupsCleared() {
+	if uuo.mutation.TeamsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   user.GroupsTable,
-			Columns: user.GroupsPrimaryKey,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
@@ -510,12 +628,12 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := uuo.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !uuo.mutation.GroupsCleared() {
+	if nodes := uuo.mutation.RemovedTeamsIDs(); len(nodes) > 0 && !uuo.mutation.TeamsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   user.GroupsTable,
-			Columns: user.GroupsPrimaryKey,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
@@ -526,15 +644,60 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := uuo.mutation.GroupsIDs(); len(nodes) > 0 {
+	if nodes := uuo.mutation.TeamsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   user.GroupsTable,
-			Columns: user.GroupsPrimaryKey,
+			Table:   user.TeamsTable,
+			Columns: user.TeamsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.CompanyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.CompanyTable,
+			Columns: user.CompanyPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedCompanyIDs(); len(nodes) > 0 && !uuo.mutation.CompanyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.CompanyTable,
+			Columns: user.CompanyPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.CompanyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   user.CompanyTable,
+			Columns: user.CompanyPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

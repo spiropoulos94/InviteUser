@@ -7,7 +7,6 @@ import (
 	"spiropoulos94/emailchaser/invite/ent/team"
 	"spiropoulos94/emailchaser/invite/ent/user"
 	"spiropoulos94/emailchaser/invite/internal/db"
-	"spiropoulos94/emailchaser/invite/internal/utils"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -40,6 +39,8 @@ func (u *UserHandler) Create(c *gin.Context) {
 		Name     string `json:"name" binding:"required"`
 		Email    string `json:"email" binding:"required,email"`
 		Password string `json:"password" binding:"required,min=6"`
+		Company  string `json:"company" binding:"required"`
+		Team     string `json:"team" binding:"required"`
 	}
 
 	// Bind request body to the userInput struct
@@ -61,17 +62,14 @@ func (u *UserHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Extract host from email address
-	host := utils.ExtractDomain(userInput.Email)
-
-	// Check if team exists for the host
+	// Check if team exists, if not, create it
 	team, err := u.db.Team.Query().
-		Where(team.NameEQ(host)).
+		Where(team.NameEQ(userInput.Team)).
 		Only(c)
 	if err != nil {
-		// Create a new team if it doesn't exist
+		// Team does not exist, create it
 		team, err = u.db.Team.Create().
-			SetName(host).
+			SetName(userInput.Team).
 			Save(c)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create team"})
@@ -79,25 +77,19 @@ func (u *UserHandler) Create(c *gin.Context) {
 		}
 	}
 
-	// Create the user in the database
+	// Create the user in the database and associate with company and team
 	newUser, err := u.db.User.Create().
 		SetName(userInput.Name).
 		SetEmail(userInput.Email).
-		SetPassword(userInput.Password).AddGroups(team).
+		SetPassword(userInput.Password).
+		AddTeams(team).
 		Save(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
 
-	// Fetch user's teams
-	userTeams, err := newUser.QueryGroups().All(c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user teams"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"user": newUser, "user_teams": userTeams})
+	c.JSON(http.StatusCreated, gin.H{"user": newUser})
 }
 
 func (u *UserHandler) All(c *gin.Context) {
