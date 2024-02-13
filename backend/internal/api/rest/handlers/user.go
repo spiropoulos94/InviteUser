@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"spiropoulos94/emailchaser/invite/ent"
-	"spiropoulos94/emailchaser/invite/ent/user"
 	"spiropoulos94/emailchaser/invite/internal/db"
 	"strconv"
 
@@ -32,19 +31,15 @@ func RegisterUserGroup(r *gin.RouterGroup) {
 	}
 }
 
-func (u *UserHandler) All (c *gin.Context) {
-
-	us, err := u.db.User.Query().Where(user.Name("test")).Only(c)
-	if err!= nil{
+func (u *UserHandler) All(c *gin.Context) {
+	users, err := u.db.User.Query().All(c)
+	if err != nil {
 		fmt.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
 	}
-    
-	c.JSON(http.StatusAccepted, gin.H{
-		"user":us,
-	})
-	
+	c.JSON(http.StatusOK, gin.H{"users": users})
 }
-
 func (u *UserHandler) FindById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
