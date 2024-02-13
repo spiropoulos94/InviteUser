@@ -39,7 +39,6 @@ func (u *UserHandler) Create(c *gin.Context) {
 		Name     string `json:"name" binding:"required"`
 		Email    string `json:"email" binding:"required,email"`
 		Password string `json:"password" binding:"required,min=6"`
-		Company  string `json:"company" binding:"required"`
 		Team     string `json:"team" binding:"required"`
 	}
 
@@ -77,7 +76,7 @@ func (u *UserHandler) Create(c *gin.Context) {
 		}
 	}
 
-	// Create the user in the database and associate with company and team
+	// Create the user in the database and associate with team
 	newUser, err := u.db.User.Create().
 		SetName(userInput.Name).
 		SetEmail(userInput.Email).
