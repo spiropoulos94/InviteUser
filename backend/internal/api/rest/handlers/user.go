@@ -39,11 +39,11 @@ func Test(c *gin.Context){
 
 func RegisterUserGroup(r *gin.RouterGroup) {
 
-	// userController := newController(db)
+	userH := NewUserHandler()
 
 		userGroup := r.Group("/user")
 	{
-		userGroup.GET("/", Test)
+		userGroup.GET("/", userH.All)
 	}
 
 	
