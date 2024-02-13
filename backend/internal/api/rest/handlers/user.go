@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"spiropoulos94/emailchaser/invite/ent"
+	"spiropoulos94/emailchaser/invite/ent/user"
 	"spiropoulos94/emailchaser/invite/internal/db"
 	"strconv"
 
@@ -14,7 +15,7 @@ type UserHandler struct {
 	db *ent.Client
 }
 
-func NewUserHandler() *UserHandler{
+func NewUserHandler() *UserHandler {
 	return &UserHandler{
 		db: db.GetDB(),
 	}
@@ -24,11 +25,52 @@ func RegisterUserGroup(r *gin.RouterGroup) {
 
 	userH := NewUserHandler()
 
-		userGroup := r.Group("/user")
+	userGroup := r.Group("/user")
 	{
 		userGroup.GET("/", userH.All)
 		userGroup.GET("/:id", userH.FindById)
+		userGroup.POST("/", userH.Create)
 	}
+}
+
+func (u *UserHandler) Create(c *gin.Context) {
+	var userInput struct {
+		Name     string `json:"name" binding:"required"`
+		Email    string `json:"email" binding:"required,email"`
+		Password string `json:"password" binding:"required,min=6"`
+	}
+
+	// Bind request body to the userInput struct
+	if err := c.ShouldBindJSON(&userInput); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if the email is already registered
+	existingUser, err := u.db.User.Query().
+		Where(user.EmailEQ(userInput.Email)).
+		Exist(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	if existingUser {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already registered"})
+		return
+	}
+
+	// Create the user in the database
+	newUser, err := u.db.User.Create().
+		SetName(userInput.Name).
+		SetEmail(userInput.Email).
+		SetPassword(userInput.Password).
+		Save(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"user": newUser})
 }
 
 func (u *UserHandler) All(c *gin.Context) {
