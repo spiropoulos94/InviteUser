@@ -13,13 +13,13 @@ services:
       - backend
 
   backend:
-    image: golang:1.20-alpine
+    image: golang:1.22-alpine
     working_dir: /app
     volumes:
       - ./backend:/app
     ports:
       - "8080:8080"
-    command: go run main.go
+    command: go run cmd/main.go
     depends_on:
       - database
 
