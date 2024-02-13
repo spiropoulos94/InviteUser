@@ -6,6 +6,7 @@ import (
 	"spiropoulos94/emailchaser/invite/ent"
 	"spiropoulos94/emailchaser/invite/ent/user"
 	"spiropoulos94/emailchaser/invite/internal/db"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +28,7 @@ func RegisterUserGroup(r *gin.RouterGroup) {
 		userGroup := r.Group("/user")
 	{
 		userGroup.GET("/", userH.All)
+		userGroup.GET("/:id", userH.FindById)
 	}
 }
 
@@ -43,3 +45,19 @@ func (u *UserHandler) All (c *gin.Context) {
 	
 }
 
+func (u *UserHandler) FindById(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	user, err := u.db.User.Get(c, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}

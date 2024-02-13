@@ -18,8 +18,8 @@ func NewRouter () *gin.Engine {
 
 	apiRouter := r.Group("/api")
 	{
+		handlers.RegisterInvitationGroup(apiRouter)
 		handlers.RegisterUserGroup(apiRouter)
-		// handlers.NewInvitationHandler(api)
 	}
 	
 	return r
