@@ -3,9 +3,11 @@ package handlers
 import (
 	"net/http"
 	"spiropoulos94/emailchaser/invite/ent"
+	"spiropoulos94/emailchaser/invite/ent/invitation"
 	"spiropoulos94/emailchaser/invite/ent/user"
 	"spiropoulos94/emailchaser/invite/internal/db"
 	"spiropoulos94/emailchaser/invite/internal/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +30,78 @@ func RegisterInvitationGroup(r *gin.RouterGroup) {
 	{
 		invitationGroup.GET("/", invitationH.All)
 		invitationGroup.POST("/", invitationH.Create)
+		invitationGroup.POST("/:id/accept", invitationH.AcceptInvitation)
 	}
+}
+
+func (h *InvitationHandler) AcceptInvitation(c *gin.Context) {
+
+	// Get the invitation ID from the request
+	invitationID := c.Param("id")
+
+	invitationIDstr, err := strconv.Atoi(invitationID)
+	if err != nil {
+		c.JSON(404, gin.H{"error": "Invitation not found"})
+		return
+	}
+
+	// Retrieve the invitation from the database
+	invitation, err := h.db.Invitation.Query().
+		Where(invitation.ID(invitationIDstr)).
+		Only(c)
+
+	if err != nil {
+		// Handle the error, e.g., return 404 if invitation is not found
+		c.JSON(404, gin.H{"error": "Invitation not found"})
+		return
+	}
+
+	// Set the status of the invitation to "accepted"
+	invitation, err = invitation.Update().
+		SetStatus("accepted").
+		Save(c)
+
+	if err != nil {
+		// Handle the error, e.g., return 500 if unable to update the invitation
+		c.JSON(500, gin.H{"error": "Failed to accept invitation"})
+		return
+	}
+
+	// Create a new user with all fields and a blank password
+	newUser, err := h.db.User.Create().
+		SetName(invitation.InviteeEmail).
+		SetEmail(invitation.InviteeEmail).
+		SetPassword("").
+		Save(c)
+
+	if err != nil {
+		// Handle the error, e.g., return 500 if unable to create the user
+		c.JSON(500, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	// Retrieve the inviter's team
+	inviterTeam, err := invitation.QueryInviter().QueryTeams().Only(c)
+
+	if err != nil {
+		// Handle the error, e.g., return 500 if unable to retrieve the inviter's team
+		c.JSON(500, gin.H{"error": "Failed to retrieve inviter's team"})
+		return
+	}
+
+	// Save the new user on the same team
+	_, err = inviterTeam.Update().
+		AddUsers(newUser).
+		Save(c)
+
+	if err != nil {
+		// Handle the error, e.g., return 500 if unable to add the user to the team
+		c.JSON(500, gin.H{"error": "Failed to add user to team"})
+		return
+	}
+
+	// Respond with success message
+	c.JSON(200, gin.H{"message": "Invitation accepted and user added to team"})
 }
 
 func (h *InvitationHandler) All(c *gin.Context) {
