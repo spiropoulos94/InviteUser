@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"spiropoulos94/emailchaser/invite/ent"
+	"spiropoulos94/emailchaser/invite/ent/team"
 	"spiropoulos94/emailchaser/invite/ent/user"
 	"spiropoulos94/emailchaser/invite/internal/db"
+	"spiropoulos94/emailchaser/invite/internal/utils"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -59,18 +61,43 @@ func (u *UserHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// Extract host from email address
+	host := utils.ExtractDomain(userInput.Email)
+
+	// Check if team exists for the host
+	team, err := u.db.Team.Query().
+		Where(team.NameEQ(host)).
+		Only(c)
+	if err != nil {
+		// Create a new team if it doesn't exist
+		team, err = u.db.Team.Create().
+			SetName(host).
+			Save(c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create team"})
+			return
+		}
+	}
+
 	// Create the user in the database
 	newUser, err := u.db.User.Create().
 		SetName(userInput.Name).
 		SetEmail(userInput.Email).
-		SetPassword(userInput.Password).
+		SetPassword(userInput.Password).AddGroups(team).
 		Save(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"user": newUser})
+	// Fetch user's teams
+	userTeams, err := newUser.QueryGroups().All(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user teams"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"user": newUser, "user_teams": userTeams})
 }
 
 func (u *UserHandler) All(c *gin.Context) {
