@@ -20,6 +20,16 @@ func NewUserHandler() *UserHandler{
 	}
 }
 
+func RegisterUserGroup(r *gin.RouterGroup) {
+
+	userH := NewUserHandler()
+
+		userGroup := r.Group("/user")
+	{
+		userGroup.GET("/", userH.All)
+	}
+}
+
 func (u *UserHandler) All (c *gin.Context) {
 
 	us, err := u.db.User.Query().Where(user.Name("test")).Only(c)
@@ -33,18 +43,3 @@ func (u *UserHandler) All (c *gin.Context) {
 	
 }
 
-func Test(c *gin.Context){
-	c.JSON(http.StatusBadRequest, gin.H{"message": "ok"})
-}
-
-func RegisterUserGroup(r *gin.RouterGroup) {
-
-	userH := NewUserHandler()
-
-		userGroup := r.Group("/user")
-	{
-		userGroup.GET("/", userH.All)
-	}
-
-	
-}
