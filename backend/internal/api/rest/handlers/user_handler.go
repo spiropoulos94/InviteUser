@@ -26,7 +26,7 @@ func RegisterUserGroup(r *gin.RouterGroup) {
 
 	userH := NewUserHandler()
 
-	userGroup := r.Group("/user")
+	userGroup := r.Group("/users")
 	{
 		userGroup.GET("/", userH.All)
 		userGroup.GET("/:id", userH.FindById)

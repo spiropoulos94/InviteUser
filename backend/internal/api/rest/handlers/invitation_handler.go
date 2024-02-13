@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"spiropoulos94/emailchaser/invite/ent"
+	"spiropoulos94/emailchaser/invite/ent/user"
 	"spiropoulos94/emailchaser/invite/internal/db"
 	"spiropoulos94/emailchaser/invite/internal/utils"
 
@@ -66,10 +67,17 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 		return
 	}
 
+	inviterUser, err := h.db.User.Query().Where(user.EmailEQ(inviteInput.InviterEmail)).Only(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Inviter user was not found"})
+		return
+	}
+
 	// Create an invitation record in the database
 	invitation, err := h.db.Invitation.Create().
 		SetInviteeEmail(inviteInput.InviteeEmail).
 		SetStatus("pending").
+		SetInviter(inviterUser).
 		Save(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create invitation"})
