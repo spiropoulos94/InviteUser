@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter () *gin.Engine {
+func NewRouter() *gin.Engine {
 	r := gin.Default()
 
 	// Ping test
@@ -15,12 +15,11 @@ func NewRouter () *gin.Engine {
 		c.String(http.StatusOK, "pong")
 	})
 
-
 	apiRouter := r.Group("/api")
 	{
 		handlers.RegisterInvitationGroup(apiRouter)
 		handlers.RegisterUserGroup(apiRouter)
 	}
-	
+
 	return r
 }
