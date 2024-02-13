@@ -32,13 +32,9 @@ type User struct {
 type UserEdges struct {
 	// Teams holds the value of the teams edge.
 	Teams []*Team `json:"teams,omitempty"`
-	// Company holds the value of the company edge.
-	Company []*Company `json:"company,omitempty"`
-	// Invitations holds the value of the invitations edge.
-	Invitations []*Invitation `json:"invitations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [1]bool
 }
 
 // TeamsOrErr returns the Teams value or an error if the edge
@@ -48,24 +44,6 @@ func (e UserEdges) TeamsOrErr() ([]*Team, error) {
 		return e.Teams, nil
 	}
 	return nil, &NotLoadedError{edge: "teams"}
-}
-
-// CompanyOrErr returns the Company value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) CompanyOrErr() ([]*Company, error) {
-	if e.loadedTypes[1] {
-		return e.Company, nil
-	}
-	return nil, &NotLoadedError{edge: "company"}
-}
-
-// InvitationsOrErr returns the Invitations value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) InvitationsOrErr() ([]*Invitation, error) {
-	if e.loadedTypes[2] {
-		return e.Invitations, nil
-	}
-	return nil, &NotLoadedError{edge: "invitations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -132,16 +110,6 @@ func (u *User) Value(name string) (ent.Value, error) {
 // QueryTeams queries the "teams" edge of the User entity.
 func (u *User) QueryTeams() *TeamQuery {
 	return NewUserClient(u.config).QueryTeams(u)
-}
-
-// QueryCompany queries the "company" edge of the User entity.
-func (u *User) QueryCompany() *CompanyQuery {
-	return NewUserClient(u.config).QueryCompany(u)
-}
-
-// QueryInvitations queries the "invitations" edge of the User entity.
-func (u *User) QueryInvitations() *InvitationQuery {
-	return NewUserClient(u.config).QueryInvitations(u)
 }
 
 // Update returns a builder for updating this User.

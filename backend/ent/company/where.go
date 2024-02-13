@@ -6,7 +6,6 @@ import (
 	"spiropoulos94/emailchaser/invite/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // ID filters vertices based on their ID field.
@@ -192,29 +191,6 @@ func DomainEqualFold(v string) predicate.Company {
 // DomainContainsFold applies the ContainsFold predicate on the "domain" field.
 func DomainContainsFold(v string) predicate.Company {
 	return predicate.Company(sql.FieldContainsFold(FieldDomain, v))
-}
-
-// HasUsers applies the HasEdge predicate on the "users" edge.
-func HasUsers() predicate.Company {
-	return predicate.Company(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, UsersTable, UsersPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasUsersWith applies the HasEdge predicate on the "users" edge with a given conditions (other predicates).
-func HasUsersWith(preds ...predicate.User) predicate.Company {
-	return predicate.Company(func(s *sql.Selector) {
-		step := newUsersStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // And groups predicates with the AND operator between them.

@@ -25,8 +25,7 @@ func (Invitation) Fields() []ent.Field {
 // Edges of the Invitation.
 func (Invitation) Edges() []ent.Edge {
 	return []ent.Edge{
-        edge.From("user", User.Type).
-            Ref("invitations").
-            Unique(),
-    }
+		edge.To("inviter", User.Type).Unique(), // Creates an edge named "inviter" pointing to the User entity.
+		// Ensure that each Invitation has only one inviter.
+	}
 }

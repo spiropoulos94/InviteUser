@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"spiropoulos94/emailchaser/invite/ent/company"
 	"spiropoulos94/emailchaser/invite/ent/predicate"
-	"spiropoulos94/emailchaser/invite/ent/user"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -56,45 +55,9 @@ func (cu *CompanyUpdate) SetNillableDomain(s *string) *CompanyUpdate {
 	return cu
 }
 
-// AddUserIDs adds the "users" edge to the User entity by IDs.
-func (cu *CompanyUpdate) AddUserIDs(ids ...int) *CompanyUpdate {
-	cu.mutation.AddUserIDs(ids...)
-	return cu
-}
-
-// AddUsers adds the "users" edges to the User entity.
-func (cu *CompanyUpdate) AddUsers(u ...*User) *CompanyUpdate {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return cu.AddUserIDs(ids...)
-}
-
 // Mutation returns the CompanyMutation object of the builder.
 func (cu *CompanyUpdate) Mutation() *CompanyMutation {
 	return cu.mutation
-}
-
-// ClearUsers clears all "users" edges to the User entity.
-func (cu *CompanyUpdate) ClearUsers() *CompanyUpdate {
-	cu.mutation.ClearUsers()
-	return cu
-}
-
-// RemoveUserIDs removes the "users" edge to User entities by IDs.
-func (cu *CompanyUpdate) RemoveUserIDs(ids ...int) *CompanyUpdate {
-	cu.mutation.RemoveUserIDs(ids...)
-	return cu
-}
-
-// RemoveUsers removes "users" edges to User entities.
-func (cu *CompanyUpdate) RemoveUsers(u ...*User) *CompanyUpdate {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return cu.RemoveUserIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -138,51 +101,6 @@ func (cu *CompanyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.Domain(); ok {
 		_spec.SetField(company.FieldDomain, field.TypeString, value)
-	}
-	if cu.mutation.UsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   company.UsersTable,
-			Columns: company.UsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cu.mutation.RemovedUsersIDs(); len(nodes) > 0 && !cu.mutation.UsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   company.UsersTable,
-			Columns: company.UsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cu.mutation.UsersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   company.UsersTable,
-			Columns: company.UsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -232,45 +150,9 @@ func (cuo *CompanyUpdateOne) SetNillableDomain(s *string) *CompanyUpdateOne {
 	return cuo
 }
 
-// AddUserIDs adds the "users" edge to the User entity by IDs.
-func (cuo *CompanyUpdateOne) AddUserIDs(ids ...int) *CompanyUpdateOne {
-	cuo.mutation.AddUserIDs(ids...)
-	return cuo
-}
-
-// AddUsers adds the "users" edges to the User entity.
-func (cuo *CompanyUpdateOne) AddUsers(u ...*User) *CompanyUpdateOne {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return cuo.AddUserIDs(ids...)
-}
-
 // Mutation returns the CompanyMutation object of the builder.
 func (cuo *CompanyUpdateOne) Mutation() *CompanyMutation {
 	return cuo.mutation
-}
-
-// ClearUsers clears all "users" edges to the User entity.
-func (cuo *CompanyUpdateOne) ClearUsers() *CompanyUpdateOne {
-	cuo.mutation.ClearUsers()
-	return cuo
-}
-
-// RemoveUserIDs removes the "users" edge to User entities by IDs.
-func (cuo *CompanyUpdateOne) RemoveUserIDs(ids ...int) *CompanyUpdateOne {
-	cuo.mutation.RemoveUserIDs(ids...)
-	return cuo
-}
-
-// RemoveUsers removes "users" edges to User entities.
-func (cuo *CompanyUpdateOne) RemoveUsers(u ...*User) *CompanyUpdateOne {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return cuo.RemoveUserIDs(ids...)
 }
 
 // Where appends a list predicates to the CompanyUpdate builder.
@@ -344,51 +226,6 @@ func (cuo *CompanyUpdateOne) sqlSave(ctx context.Context) (_node *Company, err e
 	}
 	if value, ok := cuo.mutation.Domain(); ok {
 		_spec.SetField(company.FieldDomain, field.TypeString, value)
-	}
-	if cuo.mutation.UsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   company.UsersTable,
-			Columns: company.UsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cuo.mutation.RemovedUsersIDs(); len(nodes) > 0 && !cuo.mutation.UsersCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   company.UsersTable,
-			Columns: company.UsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cuo.mutation.UsersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   company.UsersTable,
-			Columns: company.UsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Company{config: cuo.config}
 	_spec.Assign = _node.assignValues

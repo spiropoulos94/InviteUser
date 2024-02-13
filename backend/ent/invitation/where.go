@@ -240,21 +240,21 @@ func CreatedAtLTE(v time.Time) predicate.Invitation {
 	return predicate.Invitation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.Invitation {
+// HasInviter applies the HasEdge predicate on the "inviter" edge.
+func HasInviter() predicate.Invitation {
 	return predicate.Invitation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, InviterTable, InviterColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.Invitation {
+// HasInviterWith applies the HasEdge predicate on the "inviter" edge with a given conditions (other predicates).
+func HasInviterWith(preds ...predicate.User) predicate.Invitation {
 	return predicate.Invitation(func(s *sql.Selector) {
-		step := newUserStep()
+		step := newInviterStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

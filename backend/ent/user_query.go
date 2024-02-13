@@ -7,8 +7,6 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
-	"spiropoulos94/emailchaser/invite/ent/company"
-	"spiropoulos94/emailchaser/invite/ent/invitation"
 	"spiropoulos94/emailchaser/invite/ent/predicate"
 	"spiropoulos94/emailchaser/invite/ent/team"
 	"spiropoulos94/emailchaser/invite/ent/user"
@@ -21,13 +19,11 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx             *QueryContext
-	order           []user.OrderOption
-	inters          []Interceptor
-	predicates      []predicate.User
-	withTeams       *TeamQuery
-	withCompany     *CompanyQuery
-	withInvitations *InvitationQuery
+	ctx        *QueryContext
+	order      []user.OrderOption
+	inters     []Interceptor
+	predicates []predicate.User
+	withTeams  *TeamQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -79,50 +75,6 @@ func (uq *UserQuery) QueryTeams() *TeamQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(team.Table, team.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, user.TeamsTable, user.TeamsPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryCompany chains the current query on the "company" edge.
-func (uq *UserQuery) QueryCompany() *CompanyQuery {
-	query := (&CompanyClient{config: uq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := uq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := uq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(company.Table, company.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.CompanyTable, user.CompanyPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryInvitations chains the current query on the "invitations" edge.
-func (uq *UserQuery) QueryInvitations() *InvitationQuery {
-	query := (&InvitationClient{config: uq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := uq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := uq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(invitation.Table, invitation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.InvitationsTable, user.InvitationsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -317,14 +269,12 @@ func (uq *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:          uq.config,
-		ctx:             uq.ctx.Clone(),
-		order:           append([]user.OrderOption{}, uq.order...),
-		inters:          append([]Interceptor{}, uq.inters...),
-		predicates:      append([]predicate.User{}, uq.predicates...),
-		withTeams:       uq.withTeams.Clone(),
-		withCompany:     uq.withCompany.Clone(),
-		withInvitations: uq.withInvitations.Clone(),
+		config:     uq.config,
+		ctx:        uq.ctx.Clone(),
+		order:      append([]user.OrderOption{}, uq.order...),
+		inters:     append([]Interceptor{}, uq.inters...),
+		predicates: append([]predicate.User{}, uq.predicates...),
+		withTeams:  uq.withTeams.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
@@ -339,28 +289,6 @@ func (uq *UserQuery) WithTeams(opts ...func(*TeamQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withTeams = query
-	return uq
-}
-
-// WithCompany tells the query-builder to eager-load the nodes that are connected to
-// the "company" edge. The optional arguments are used to configure the query builder of the edge.
-func (uq *UserQuery) WithCompany(opts ...func(*CompanyQuery)) *UserQuery {
-	query := (&CompanyClient{config: uq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	uq.withCompany = query
-	return uq
-}
-
-// WithInvitations tells the query-builder to eager-load the nodes that are connected to
-// the "invitations" edge. The optional arguments are used to configure the query builder of the edge.
-func (uq *UserQuery) WithInvitations(opts ...func(*InvitationQuery)) *UserQuery {
-	query := (&InvitationClient{config: uq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	uq.withInvitations = query
 	return uq
 }
 
@@ -442,10 +370,8 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [1]bool{
 			uq.withTeams != nil,
-			uq.withCompany != nil,
-			uq.withInvitations != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -470,20 +396,6 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadTeams(ctx, query, nodes,
 			func(n *User) { n.Edges.Teams = []*Team{} },
 			func(n *User, e *Team) { n.Edges.Teams = append(n.Edges.Teams, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := uq.withCompany; query != nil {
-		if err := uq.loadCompany(ctx, query, nodes,
-			func(n *User) { n.Edges.Company = []*Company{} },
-			func(n *User, e *Company) { n.Edges.Company = append(n.Edges.Company, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := uq.withInvitations; query != nil {
-		if err := uq.loadInvitations(ctx, query, nodes,
-			func(n *User) { n.Edges.Invitations = []*Invitation{} },
-			func(n *User, e *Invitation) { n.Edges.Invitations = append(n.Edges.Invitations, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -548,98 +460,6 @@ func (uq *UserQuery) loadTeams(ctx context.Context, query *TeamQuery, nodes []*U
 		for kn := range nodes {
 			assign(kn, n)
 		}
-	}
-	return nil
-}
-func (uq *UserQuery) loadCompany(ctx context.Context, query *CompanyQuery, nodes []*User, init func(*User), assign func(*User, *Company)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[int]*User)
-	nids := make(map[int]map[*User]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
-		}
-	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(user.CompanyTable)
-		s.Join(joinT).On(s.C(company.FieldID), joinT.C(user.CompanyPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(user.CompanyPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(user.CompanyPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(sql.NullInt64)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := int(values[0].(*sql.NullInt64).Int64)
-				inValue := int(values[1].(*sql.NullInt64).Int64)
-				if nids[inValue] == nil {
-					nids[inValue] = map[*User]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*Company](ctx, query, qr, query.inters)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected "company" node returned %v`, n.ID)
-		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
-	}
-	return nil
-}
-func (uq *UserQuery) loadInvitations(ctx context.Context, query *InvitationQuery, nodes []*User, init func(*User), assign func(*User, *Invitation)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*User)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.Invitation(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(user.InvitationsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.user_invitations
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "user_invitations" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_invitations" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
 	}
 	return nil
 }

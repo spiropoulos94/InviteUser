@@ -336,22 +336,6 @@ func (c *CompanyClient) GetX(ctx context.Context, id int) *Company {
 	return obj
 }
 
-// QueryUsers queries the users edge of a Company.
-func (c *CompanyClient) QueryUsers(co *Company) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := co.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(company.Table, company.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, company.UsersTable, company.UsersPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *CompanyClient) Hooks() []Hook {
 	return c.hooks.Company
@@ -485,15 +469,15 @@ func (c *InvitationClient) GetX(ctx context.Context, id int) *Invitation {
 	return obj
 }
 
-// QueryUser queries the user edge of a Invitation.
-func (c *InvitationClient) QueryUser(i *Invitation) *UserQuery {
+// QueryInviter queries the inviter edge of a Invitation.
+func (c *InvitationClient) QueryInviter(i *Invitation) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := i.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(invitation.Table, invitation.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, invitation.UserTable, invitation.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, invitation.InviterTable, invitation.InviterColumn),
 		)
 		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
 		return fromV, nil
@@ -792,38 +776,6 @@ func (c *UserClient) QueryTeams(u *User) *TeamQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(team.Table, team.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, user.TeamsTable, user.TeamsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryCompany queries the company edge of a User.
-func (c *UserClient) QueryCompany(u *User) *CompanyQuery {
-	query := (&CompanyClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(company.Table, company.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.CompanyTable, user.CompanyPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryInvitations queries the invitations edge of a User.
-func (c *UserClient) QueryInvitations(u *User) *InvitationQuery {
-	query := (&InvitationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(invitation.Table, invitation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.InvitationsTable, user.InvitationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

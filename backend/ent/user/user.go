@@ -20,10 +20,6 @@ const (
 	FieldPassword = "password"
 	// EdgeTeams holds the string denoting the teams edge name in mutations.
 	EdgeTeams = "teams"
-	// EdgeCompany holds the string denoting the company edge name in mutations.
-	EdgeCompany = "company"
-	// EdgeInvitations holds the string denoting the invitations edge name in mutations.
-	EdgeInvitations = "invitations"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// TeamsTable is the table that holds the teams relation/edge. The primary key declared below.
@@ -31,18 +27,6 @@ const (
 	// TeamsInverseTable is the table name for the Team entity.
 	// It exists in this package in order to avoid circular dependency with the "team" package.
 	TeamsInverseTable = "teams"
-	// CompanyTable is the table that holds the company relation/edge. The primary key declared below.
-	CompanyTable = "company_users"
-	// CompanyInverseTable is the table name for the Company entity.
-	// It exists in this package in order to avoid circular dependency with the "company" package.
-	CompanyInverseTable = "companies"
-	// InvitationsTable is the table that holds the invitations relation/edge.
-	InvitationsTable = "invitations"
-	// InvitationsInverseTable is the table name for the Invitation entity.
-	// It exists in this package in order to avoid circular dependency with the "invitation" package.
-	InvitationsInverseTable = "invitations"
-	// InvitationsColumn is the table column denoting the invitations relation/edge.
-	InvitationsColumn = "user_invitations"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -57,9 +41,6 @@ var (
 	// TeamsPrimaryKey and TeamsColumn2 are the table columns denoting the
 	// primary key for the teams relation (M2M).
 	TeamsPrimaryKey = []string{"team_id", "user_id"}
-	// CompanyPrimaryKey and CompanyColumn2 are the table columns denoting the
-	// primary key for the company relation (M2M).
-	CompanyPrimaryKey = []string{"company_id", "user_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -108,52 +89,10 @@ func ByTeams(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newTeamsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByCompanyCount orders the results by company count.
-func ByCompanyCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newCompanyStep(), opts...)
-	}
-}
-
-// ByCompany orders the results by company terms.
-func ByCompany(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newCompanyStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByInvitationsCount orders the results by invitations count.
-func ByInvitationsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newInvitationsStep(), opts...)
-	}
-}
-
-// ByInvitations orders the results by invitations terms.
-func ByInvitations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newInvitationsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newTeamsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TeamsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, TeamsTable, TeamsPrimaryKey...),
-	)
-}
-func newCompanyStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(CompanyInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, CompanyTable, CompanyPrimaryKey...),
-	)
-}
-func newInvitationsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(InvitationsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, InvitationsTable, InvitationsColumn),
 	)
 }

@@ -26,31 +26,31 @@ type Invitation struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InvitationQuery when eager-loading is set.
-	Edges            InvitationEdges `json:"edges"`
-	user_invitations *int
-	selectValues     sql.SelectValues
+	Edges              InvitationEdges `json:"edges"`
+	invitation_inviter *int
+	selectValues       sql.SelectValues
 }
 
 // InvitationEdges holds the relations/edges for other nodes in the graph.
 type InvitationEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
+	// Inviter holds the value of the inviter edge.
+	Inviter *User `json:"inviter,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// UserOrErr returns the User value or an error if the edge
+// InviterOrErr returns the Inviter value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e InvitationEdges) UserOrErr() (*User, error) {
+func (e InvitationEdges) InviterOrErr() (*User, error) {
 	if e.loadedTypes[0] {
-		if e.User == nil {
+		if e.Inviter == nil {
 			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: user.Label}
 		}
-		return e.User, nil
+		return e.Inviter, nil
 	}
-	return nil, &NotLoadedError{edge: "user"}
+	return nil, &NotLoadedError{edge: "inviter"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -64,7 +64,7 @@ func (*Invitation) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case invitation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case invitation.ForeignKeys[0]: // user_invitations
+		case invitation.ForeignKeys[0]: // invitation_inviter
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -107,10 +107,10 @@ func (i *Invitation) assignValues(columns []string, values []any) error {
 			}
 		case invitation.ForeignKeys[0]:
 			if value, ok := values[j].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field user_invitations", value)
+				return fmt.Errorf("unexpected type %T for edge-field invitation_inviter", value)
 			} else if value.Valid {
-				i.user_invitations = new(int)
-				*i.user_invitations = int(value.Int64)
+				i.invitation_inviter = new(int)
+				*i.invitation_inviter = int(value.Int64)
 			}
 		default:
 			i.selectValues.Set(columns[j], values[j])
@@ -125,9 +125,9 @@ func (i *Invitation) Value(name string) (ent.Value, error) {
 	return i.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the Invitation entity.
-func (i *Invitation) QueryUser() *UserQuery {
-	return NewInvitationClient(i.config).QueryUser(i)
+// QueryInviter queries the "inviter" edge of the Invitation entity.
+func (i *Invitation) QueryInviter() *UserQuery {
+	return NewInvitationClient(i.config).QueryInviter(i)
 }
 
 // Update returns a builder for updating this Invitation.

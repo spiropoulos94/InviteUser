@@ -4,12 +4,10 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 	"spiropoulos94/emailchaser/invite/ent/company"
 	"spiropoulos94/emailchaser/invite/ent/predicate"
-	"spiropoulos94/emailchaser/invite/ent/user"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -23,7 +21,6 @@ type CompanyQuery struct {
 	order      []company.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Company
-	withUsers  *UserQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,28 +55,6 @@ func (cq *CompanyQuery) Unique(unique bool) *CompanyQuery {
 func (cq *CompanyQuery) Order(o ...company.OrderOption) *CompanyQuery {
 	cq.order = append(cq.order, o...)
 	return cq
-}
-
-// QueryUsers chains the current query on the "users" edge.
-func (cq *CompanyQuery) QueryUsers() *UserQuery {
-	query := (&UserClient{config: cq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := cq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := cq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(company.Table, company.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, company.UsersTable, company.UsersPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // First returns the first Company entity from the query.
@@ -274,22 +249,10 @@ func (cq *CompanyQuery) Clone() *CompanyQuery {
 		order:      append([]company.OrderOption{}, cq.order...),
 		inters:     append([]Interceptor{}, cq.inters...),
 		predicates: append([]predicate.Company{}, cq.predicates...),
-		withUsers:  cq.withUsers.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
-}
-
-// WithUsers tells the query-builder to eager-load the nodes that are connected to
-// the "users" edge. The optional arguments are used to configure the query builder of the edge.
-func (cq *CompanyQuery) WithUsers(opts ...func(*UserQuery)) *CompanyQuery {
-	query := (&UserClient{config: cq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	cq.withUsers = query
-	return cq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -368,11 +331,8 @@ func (cq *CompanyQuery) prepareQuery(ctx context.Context) error {
 
 func (cq *CompanyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Company, error) {
 	var (
-		nodes       = []*Company{}
-		_spec       = cq.querySpec()
-		loadedTypes = [1]bool{
-			cq.withUsers != nil,
-		}
+		nodes = []*Company{}
+		_spec = cq.querySpec()
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Company).scanValues(nil, columns)
@@ -380,7 +340,6 @@ func (cq *CompanyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comp
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Company{config: cq.config}
 		nodes = append(nodes, node)
-		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -392,76 +351,7 @@ func (cq *CompanyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comp
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := cq.withUsers; query != nil {
-		if err := cq.loadUsers(ctx, query, nodes,
-			func(n *Company) { n.Edges.Users = []*User{} },
-			func(n *Company, e *User) { n.Edges.Users = append(n.Edges.Users, e) }); err != nil {
-			return nil, err
-		}
-	}
 	return nodes, nil
-}
-
-func (cq *CompanyQuery) loadUsers(ctx context.Context, query *UserQuery, nodes []*Company, init func(*Company), assign func(*Company, *User)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[int]*Company)
-	nids := make(map[int]map[*Company]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
-		}
-	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(company.UsersTable)
-		s.Join(joinT).On(s.C(user.FieldID), joinT.C(company.UsersPrimaryKey[1]))
-		s.Where(sql.InValues(joinT.C(company.UsersPrimaryKey[0]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(company.UsersPrimaryKey[0]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(sql.NullInt64)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := int(values[0].(*sql.NullInt64).Int64)
-				inValue := int(values[1].(*sql.NullInt64).Int64)
-				if nids[inValue] == nil {
-					nids[inValue] = map[*Company]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*User](ctx, query, qr, query.inters)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected "users" node returned %v`, n.ID)
-		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
-	}
-	return nil
 }
 
 func (cq *CompanyQuery) sqlCount(ctx context.Context) (int, error) {

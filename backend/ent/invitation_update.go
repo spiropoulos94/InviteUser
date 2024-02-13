@@ -71,23 +71,23 @@ func (iu *InvitationUpdate) SetNillableCreatedAt(t *time.Time) *InvitationUpdate
 	return iu
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (iu *InvitationUpdate) SetUserID(id int) *InvitationUpdate {
-	iu.mutation.SetUserID(id)
+// SetInviterID sets the "inviter" edge to the User entity by ID.
+func (iu *InvitationUpdate) SetInviterID(id int) *InvitationUpdate {
+	iu.mutation.SetInviterID(id)
 	return iu
 }
 
-// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (iu *InvitationUpdate) SetNillableUserID(id *int) *InvitationUpdate {
+// SetNillableInviterID sets the "inviter" edge to the User entity by ID if the given value is not nil.
+func (iu *InvitationUpdate) SetNillableInviterID(id *int) *InvitationUpdate {
 	if id != nil {
-		iu = iu.SetUserID(*id)
+		iu = iu.SetInviterID(*id)
 	}
 	return iu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (iu *InvitationUpdate) SetUser(u *User) *InvitationUpdate {
-	return iu.SetUserID(u.ID)
+// SetInviter sets the "inviter" edge to the User entity.
+func (iu *InvitationUpdate) SetInviter(u *User) *InvitationUpdate {
+	return iu.SetInviterID(u.ID)
 }
 
 // Mutation returns the InvitationMutation object of the builder.
@@ -95,9 +95,9 @@ func (iu *InvitationUpdate) Mutation() *InvitationMutation {
 	return iu.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (iu *InvitationUpdate) ClearUser() *InvitationUpdate {
-	iu.mutation.ClearUser()
+// ClearInviter clears the "inviter" edge to the User entity.
+func (iu *InvitationUpdate) ClearInviter() *InvitationUpdate {
+	iu.mutation.ClearInviter()
 	return iu
 }
 
@@ -146,12 +146,12 @@ func (iu *InvitationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := iu.mutation.CreatedAt(); ok {
 		_spec.SetField(invitation.FieldCreatedAt, field.TypeTime, value)
 	}
-	if iu.mutation.UserCleared() {
+	if iu.mutation.InviterCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   invitation.UserTable,
-			Columns: []string{invitation.UserColumn},
+			Inverse: false,
+			Table:   invitation.InviterTable,
+			Columns: []string{invitation.InviterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -159,12 +159,12 @@ func (iu *InvitationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iu.mutation.UserIDs(); len(nodes) > 0 {
+	if nodes := iu.mutation.InviterIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   invitation.UserTable,
-			Columns: []string{invitation.UserColumn},
+			Inverse: false,
+			Table:   invitation.InviterTable,
+			Columns: []string{invitation.InviterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -237,23 +237,23 @@ func (iuo *InvitationUpdateOne) SetNillableCreatedAt(t *time.Time) *InvitationUp
 	return iuo
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (iuo *InvitationUpdateOne) SetUserID(id int) *InvitationUpdateOne {
-	iuo.mutation.SetUserID(id)
+// SetInviterID sets the "inviter" edge to the User entity by ID.
+func (iuo *InvitationUpdateOne) SetInviterID(id int) *InvitationUpdateOne {
+	iuo.mutation.SetInviterID(id)
 	return iuo
 }
 
-// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (iuo *InvitationUpdateOne) SetNillableUserID(id *int) *InvitationUpdateOne {
+// SetNillableInviterID sets the "inviter" edge to the User entity by ID if the given value is not nil.
+func (iuo *InvitationUpdateOne) SetNillableInviterID(id *int) *InvitationUpdateOne {
 	if id != nil {
-		iuo = iuo.SetUserID(*id)
+		iuo = iuo.SetInviterID(*id)
 	}
 	return iuo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (iuo *InvitationUpdateOne) SetUser(u *User) *InvitationUpdateOne {
-	return iuo.SetUserID(u.ID)
+// SetInviter sets the "inviter" edge to the User entity.
+func (iuo *InvitationUpdateOne) SetInviter(u *User) *InvitationUpdateOne {
+	return iuo.SetInviterID(u.ID)
 }
 
 // Mutation returns the InvitationMutation object of the builder.
@@ -261,9 +261,9 @@ func (iuo *InvitationUpdateOne) Mutation() *InvitationMutation {
 	return iuo.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (iuo *InvitationUpdateOne) ClearUser() *InvitationUpdateOne {
-	iuo.mutation.ClearUser()
+// ClearInviter clears the "inviter" edge to the User entity.
+func (iuo *InvitationUpdateOne) ClearInviter() *InvitationUpdateOne {
+	iuo.mutation.ClearInviter()
 	return iuo
 }
 
@@ -342,12 +342,12 @@ func (iuo *InvitationUpdateOne) sqlSave(ctx context.Context) (_node *Invitation,
 	if value, ok := iuo.mutation.CreatedAt(); ok {
 		_spec.SetField(invitation.FieldCreatedAt, field.TypeTime, value)
 	}
-	if iuo.mutation.UserCleared() {
+	if iuo.mutation.InviterCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   invitation.UserTable,
-			Columns: []string{invitation.UserColumn},
+			Inverse: false,
+			Table:   invitation.InviterTable,
+			Columns: []string{invitation.InviterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -355,12 +355,12 @@ func (iuo *InvitationUpdateOne) sqlSave(ctx context.Context) (_node *Invitation,
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := iuo.mutation.UserIDs(); len(nodes) > 0 {
+	if nodes := iuo.mutation.InviterIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   invitation.UserTable,
-			Columns: []string{invitation.UserColumn},
+			Inverse: false,
+			Table:   invitation.InviterTable,
+			Columns: []string{invitation.InviterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),

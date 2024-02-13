@@ -18,12 +18,12 @@ import (
 // InvitationQuery is the builder for querying Invitation entities.
 type InvitationQuery struct {
 	config
-	ctx        *QueryContext
-	order      []invitation.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Invitation
-	withUser   *UserQuery
-	withFKs    bool
+	ctx         *QueryContext
+	order       []invitation.OrderOption
+	inters      []Interceptor
+	predicates  []predicate.Invitation
+	withInviter *UserQuery
+	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -60,8 +60,8 @@ func (iq *InvitationQuery) Order(o ...invitation.OrderOption) *InvitationQuery {
 	return iq
 }
 
-// QueryUser chains the current query on the "user" edge.
-func (iq *InvitationQuery) QueryUser() *UserQuery {
+// QueryInviter chains the current query on the "inviter" edge.
+func (iq *InvitationQuery) QueryInviter() *UserQuery {
 	query := (&UserClient{config: iq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := iq.prepareQuery(ctx); err != nil {
@@ -74,7 +74,7 @@ func (iq *InvitationQuery) QueryUser() *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(invitation.Table, invitation.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, invitation.UserTable, invitation.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, invitation.InviterTable, invitation.InviterColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
 		return fromU, nil
@@ -269,26 +269,26 @@ func (iq *InvitationQuery) Clone() *InvitationQuery {
 		return nil
 	}
 	return &InvitationQuery{
-		config:     iq.config,
-		ctx:        iq.ctx.Clone(),
-		order:      append([]invitation.OrderOption{}, iq.order...),
-		inters:     append([]Interceptor{}, iq.inters...),
-		predicates: append([]predicate.Invitation{}, iq.predicates...),
-		withUser:   iq.withUser.Clone(),
+		config:      iq.config,
+		ctx:         iq.ctx.Clone(),
+		order:       append([]invitation.OrderOption{}, iq.order...),
+		inters:      append([]Interceptor{}, iq.inters...),
+		predicates:  append([]predicate.Invitation{}, iq.predicates...),
+		withInviter: iq.withInviter.Clone(),
 		// clone intermediate query.
 		sql:  iq.sql.Clone(),
 		path: iq.path,
 	}
 }
 
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *InvitationQuery) WithUser(opts ...func(*UserQuery)) *InvitationQuery {
+// WithInviter tells the query-builder to eager-load the nodes that are connected to
+// the "inviter" edge. The optional arguments are used to configure the query builder of the edge.
+func (iq *InvitationQuery) WithInviter(opts ...func(*UserQuery)) *InvitationQuery {
 	query := (&UserClient{config: iq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	iq.withUser = query
+	iq.withInviter = query
 	return iq
 }
 
@@ -372,10 +372,10 @@ func (iq *InvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*I
 		withFKs     = iq.withFKs
 		_spec       = iq.querySpec()
 		loadedTypes = [1]bool{
-			iq.withUser != nil,
+			iq.withInviter != nil,
 		}
 	)
-	if iq.withUser != nil {
+	if iq.withInviter != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -399,23 +399,23 @@ func (iq *InvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*I
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := iq.withUser; query != nil {
-		if err := iq.loadUser(ctx, query, nodes, nil,
-			func(n *Invitation, e *User) { n.Edges.User = e }); err != nil {
+	if query := iq.withInviter; query != nil {
+		if err := iq.loadInviter(ctx, query, nodes, nil,
+			func(n *Invitation, e *User) { n.Edges.Inviter = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (iq *InvitationQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Invitation, init func(*Invitation), assign func(*Invitation, *User)) error {
+func (iq *InvitationQuery) loadInviter(ctx context.Context, query *UserQuery, nodes []*Invitation, init func(*Invitation), assign func(*Invitation, *User)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Invitation)
 	for i := range nodes {
-		if nodes[i].user_invitations == nil {
+		if nodes[i].invitation_inviter == nil {
 			continue
 		}
-		fk := *nodes[i].user_invitations
+		fk := *nodes[i].invitation_inviter
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -432,7 +432,7 @@ func (iq *InvitationQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_invitations" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "invitation_inviter" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

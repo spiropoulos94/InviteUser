@@ -6,8 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"spiropoulos94/emailchaser/invite/ent/company"
-	"spiropoulos94/emailchaser/invite/ent/invitation"
 	"spiropoulos94/emailchaser/invite/ent/predicate"
 	"spiropoulos94/emailchaser/invite/ent/team"
 	"spiropoulos94/emailchaser/invite/ent/user"
@@ -87,36 +85,6 @@ func (uu *UserUpdate) AddTeams(t ...*Team) *UserUpdate {
 	return uu.AddTeamIDs(ids...)
 }
 
-// AddCompanyIDs adds the "company" edge to the Company entity by IDs.
-func (uu *UserUpdate) AddCompanyIDs(ids ...int) *UserUpdate {
-	uu.mutation.AddCompanyIDs(ids...)
-	return uu
-}
-
-// AddCompany adds the "company" edges to the Company entity.
-func (uu *UserUpdate) AddCompany(c ...*Company) *UserUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return uu.AddCompanyIDs(ids...)
-}
-
-// AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
-func (uu *UserUpdate) AddInvitationIDs(ids ...int) *UserUpdate {
-	uu.mutation.AddInvitationIDs(ids...)
-	return uu
-}
-
-// AddInvitations adds the "invitations" edges to the Invitation entity.
-func (uu *UserUpdate) AddInvitations(i ...*Invitation) *UserUpdate {
-	ids := make([]int, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return uu.AddInvitationIDs(ids...)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -141,48 +109,6 @@ func (uu *UserUpdate) RemoveTeams(t ...*Team) *UserUpdate {
 		ids[i] = t[i].ID
 	}
 	return uu.RemoveTeamIDs(ids...)
-}
-
-// ClearCompany clears all "company" edges to the Company entity.
-func (uu *UserUpdate) ClearCompany() *UserUpdate {
-	uu.mutation.ClearCompany()
-	return uu
-}
-
-// RemoveCompanyIDs removes the "company" edge to Company entities by IDs.
-func (uu *UserUpdate) RemoveCompanyIDs(ids ...int) *UserUpdate {
-	uu.mutation.RemoveCompanyIDs(ids...)
-	return uu
-}
-
-// RemoveCompany removes "company" edges to Company entities.
-func (uu *UserUpdate) RemoveCompany(c ...*Company) *UserUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return uu.RemoveCompanyIDs(ids...)
-}
-
-// ClearInvitations clears all "invitations" edges to the Invitation entity.
-func (uu *UserUpdate) ClearInvitations() *UserUpdate {
-	uu.mutation.ClearInvitations()
-	return uu
-}
-
-// RemoveInvitationIDs removes the "invitations" edge to Invitation entities by IDs.
-func (uu *UserUpdate) RemoveInvitationIDs(ids ...int) *UserUpdate {
-	uu.mutation.RemoveInvitationIDs(ids...)
-	return uu
-}
-
-// RemoveInvitations removes "invitations" edges to Invitation entities.
-func (uu *UserUpdate) RemoveInvitations(i ...*Invitation) *UserUpdate {
-	ids := make([]int, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return uu.RemoveInvitationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -275,96 +201,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if uu.mutation.CompanyCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.CompanyTable,
-			Columns: user.CompanyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.RemovedCompanyIDs(); len(nodes) > 0 && !uu.mutation.CompanyCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.CompanyTable,
-			Columns: user.CompanyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.CompanyIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.CompanyTable,
-			Columns: user.CompanyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uu.mutation.InvitationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.InvitationsTable,
-			Columns: []string{user.InvitationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.RemovedInvitationsIDs(); len(nodes) > 0 && !uu.mutation.InvitationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.InvitationsTable,
-			Columns: []string{user.InvitationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.InvitationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.InvitationsTable,
-			Columns: []string{user.InvitationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -442,36 +278,6 @@ func (uuo *UserUpdateOne) AddTeams(t ...*Team) *UserUpdateOne {
 	return uuo.AddTeamIDs(ids...)
 }
 
-// AddCompanyIDs adds the "company" edge to the Company entity by IDs.
-func (uuo *UserUpdateOne) AddCompanyIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.AddCompanyIDs(ids...)
-	return uuo
-}
-
-// AddCompany adds the "company" edges to the Company entity.
-func (uuo *UserUpdateOne) AddCompany(c ...*Company) *UserUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return uuo.AddCompanyIDs(ids...)
-}
-
-// AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
-func (uuo *UserUpdateOne) AddInvitationIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.AddInvitationIDs(ids...)
-	return uuo
-}
-
-// AddInvitations adds the "invitations" edges to the Invitation entity.
-func (uuo *UserUpdateOne) AddInvitations(i ...*Invitation) *UserUpdateOne {
-	ids := make([]int, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return uuo.AddInvitationIDs(ids...)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -496,48 +302,6 @@ func (uuo *UserUpdateOne) RemoveTeams(t ...*Team) *UserUpdateOne {
 		ids[i] = t[i].ID
 	}
 	return uuo.RemoveTeamIDs(ids...)
-}
-
-// ClearCompany clears all "company" edges to the Company entity.
-func (uuo *UserUpdateOne) ClearCompany() *UserUpdateOne {
-	uuo.mutation.ClearCompany()
-	return uuo
-}
-
-// RemoveCompanyIDs removes the "company" edge to Company entities by IDs.
-func (uuo *UserUpdateOne) RemoveCompanyIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.RemoveCompanyIDs(ids...)
-	return uuo
-}
-
-// RemoveCompany removes "company" edges to Company entities.
-func (uuo *UserUpdateOne) RemoveCompany(c ...*Company) *UserUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return uuo.RemoveCompanyIDs(ids...)
-}
-
-// ClearInvitations clears all "invitations" edges to the Invitation entity.
-func (uuo *UserUpdateOne) ClearInvitations() *UserUpdateOne {
-	uuo.mutation.ClearInvitations()
-	return uuo
-}
-
-// RemoveInvitationIDs removes the "invitations" edge to Invitation entities by IDs.
-func (uuo *UserUpdateOne) RemoveInvitationIDs(ids ...int) *UserUpdateOne {
-	uuo.mutation.RemoveInvitationIDs(ids...)
-	return uuo
-}
-
-// RemoveInvitations removes "invitations" edges to Invitation entities.
-func (uuo *UserUpdateOne) RemoveInvitations(i ...*Invitation) *UserUpdateOne {
-	ids := make([]int, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return uuo.RemoveInvitationIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -653,96 +417,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uuo.mutation.CompanyCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.CompanyTable,
-			Columns: user.CompanyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.RemovedCompanyIDs(); len(nodes) > 0 && !uuo.mutation.CompanyCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.CompanyTable,
-			Columns: user.CompanyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.CompanyIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.CompanyTable,
-			Columns: user.CompanyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uuo.mutation.InvitationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.InvitationsTable,
-			Columns: []string{user.InvitationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeInt),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.RemovedInvitationsIDs(); len(nodes) > 0 && !uuo.mutation.InvitationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.InvitationsTable,
-			Columns: []string{user.InvitationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.InvitationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.InvitationsTable,
-			Columns: []string{user.InvitationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

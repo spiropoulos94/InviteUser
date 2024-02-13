@@ -47,23 +47,23 @@ func (ic *InvitationCreate) SetNillableCreatedAt(t *time.Time) *InvitationCreate
 	return ic
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (ic *InvitationCreate) SetUserID(id int) *InvitationCreate {
-	ic.mutation.SetUserID(id)
+// SetInviterID sets the "inviter" edge to the User entity by ID.
+func (ic *InvitationCreate) SetInviterID(id int) *InvitationCreate {
+	ic.mutation.SetInviterID(id)
 	return ic
 }
 
-// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (ic *InvitationCreate) SetNillableUserID(id *int) *InvitationCreate {
+// SetNillableInviterID sets the "inviter" edge to the User entity by ID if the given value is not nil.
+func (ic *InvitationCreate) SetNillableInviterID(id *int) *InvitationCreate {
 	if id != nil {
-		ic = ic.SetUserID(*id)
+		ic = ic.SetInviterID(*id)
 	}
 	return ic
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (ic *InvitationCreate) SetUser(u *User) *InvitationCreate {
-	return ic.SetUserID(u.ID)
+// SetInviter sets the "inviter" edge to the User entity.
+func (ic *InvitationCreate) SetInviter(u *User) *InvitationCreate {
+	return ic.SetInviterID(u.ID)
 }
 
 // Mutation returns the InvitationMutation object of the builder.
@@ -156,12 +156,12 @@ func (ic *InvitationCreate) createSpec() (*Invitation, *sqlgraph.CreateSpec) {
 		_spec.SetField(invitation.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := ic.mutation.UserIDs(); len(nodes) > 0 {
+	if nodes := ic.mutation.InviterIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   invitation.UserTable,
-			Columns: []string{invitation.UserColumn},
+			Inverse: false,
+			Table:   invitation.InviterTable,
+			Columns: []string{invitation.InviterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
@@ -170,7 +170,7 @@ func (ic *InvitationCreate) createSpec() (*Invitation, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.user_invitations = &nodes[0]
+		_node.invitation_inviter = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

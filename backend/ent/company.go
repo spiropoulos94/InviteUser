@@ -19,29 +19,8 @@ type Company struct {
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Domain holds the value of the "domain" field.
-	Domain string `json:"domain,omitempty"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the CompanyQuery when eager-loading is set.
-	Edges        CompanyEdges `json:"edges"`
+	Domain       string `json:"domain,omitempty"`
 	selectValues sql.SelectValues
-}
-
-// CompanyEdges holds the relations/edges for other nodes in the graph.
-type CompanyEdges struct {
-	// Users holds the value of the users edge.
-	Users []*User `json:"users,omitempty"`
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// UsersOrErr returns the Users value or an error if the edge
-// was not loaded in eager-loading.
-func (e CompanyEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[0] {
-		return e.Users, nil
-	}
-	return nil, &NotLoadedError{edge: "users"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -97,11 +76,6 @@ func (c *Company) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (c *Company) Value(name string) (ent.Value, error) {
 	return c.selectValues.Get(name)
-}
-
-// QueryUsers queries the "users" edge of the Company entity.
-func (c *Company) QueryUsers() *UserQuery {
-	return NewCompanyClient(c.config).QueryUsers(c)
 }
 
 // Update returns a builder for updating this Company.

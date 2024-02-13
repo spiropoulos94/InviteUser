@@ -25,6 +25,5 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("teams", Team.Type).
 			Ref("users"),
-		edge.To("invitations", Invitation.Type),
 	}
 }

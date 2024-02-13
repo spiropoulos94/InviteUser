@@ -6,8 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"spiropoulos94/emailchaser/invite/ent/company"
-	"spiropoulos94/emailchaser/invite/ent/invitation"
 	"spiropoulos94/emailchaser/invite/ent/team"
 	"spiropoulos94/emailchaser/invite/ent/user"
 
@@ -53,36 +51,6 @@ func (uc *UserCreate) AddTeams(t ...*Team) *UserCreate {
 		ids[i] = t[i].ID
 	}
 	return uc.AddTeamIDs(ids...)
-}
-
-// AddCompanyIDs adds the "company" edge to the Company entity by IDs.
-func (uc *UserCreate) AddCompanyIDs(ids ...int) *UserCreate {
-	uc.mutation.AddCompanyIDs(ids...)
-	return uc
-}
-
-// AddCompany adds the "company" edges to the Company entity.
-func (uc *UserCreate) AddCompany(c ...*Company) *UserCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return uc.AddCompanyIDs(ids...)
-}
-
-// AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
-func (uc *UserCreate) AddInvitationIDs(ids ...int) *UserCreate {
-	uc.mutation.AddInvitationIDs(ids...)
-	return uc
-}
-
-// AddInvitations adds the "invitations" edges to the Invitation entity.
-func (uc *UserCreate) AddInvitations(i ...*Invitation) *UserCreate {
-	ids := make([]int, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return uc.AddInvitationIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -175,38 +143,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(team.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := uc.mutation.CompanyIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   user.CompanyTable,
-			Columns: user.CompanyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(company.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := uc.mutation.InvitationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.InvitationsTable,
-			Columns: []string{user.InvitationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

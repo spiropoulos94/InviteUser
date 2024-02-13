@@ -20,17 +20,17 @@ const (
 	FieldStatus = "status"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// EdgeUser holds the string denoting the user edge name in mutations.
-	EdgeUser = "user"
+	// EdgeInviter holds the string denoting the inviter edge name in mutations.
+	EdgeInviter = "inviter"
 	// Table holds the table name of the invitation in the database.
 	Table = "invitations"
-	// UserTable is the table that holds the user relation/edge.
-	UserTable = "invitations"
-	// UserInverseTable is the table name for the User entity.
+	// InviterTable is the table that holds the inviter relation/edge.
+	InviterTable = "invitations"
+	// InviterInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UserInverseTable = "users"
-	// UserColumn is the table column denoting the user relation/edge.
-	UserColumn = "user_invitations"
+	InviterInverseTable = "users"
+	// InviterColumn is the table column denoting the inviter relation/edge.
+	InviterColumn = "invitation_inviter"
 )
 
 // Columns holds all SQL columns for invitation fields.
@@ -44,7 +44,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "invitations"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"user_invitations",
+	"invitation_inviter",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -90,16 +90,16 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByUserField orders the results by user field.
-func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByInviterField orders the results by inviter field.
+func ByInviterField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newInviterStep(), sql.OrderByField(field, opts...))
 	}
 }
-func newUserStep() *sqlgraph.Step {
+func newInviterStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(UserInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+		sqlgraph.To(InviterInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, InviterTable, InviterColumn),
 	)
 }

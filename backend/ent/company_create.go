@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"spiropoulos94/emailchaser/invite/ent/company"
-	"spiropoulos94/emailchaser/invite/ent/user"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -30,21 +29,6 @@ func (cc *CompanyCreate) SetName(s string) *CompanyCreate {
 func (cc *CompanyCreate) SetDomain(s string) *CompanyCreate {
 	cc.mutation.SetDomain(s)
 	return cc
-}
-
-// AddUserIDs adds the "users" edge to the User entity by IDs.
-func (cc *CompanyCreate) AddUserIDs(ids ...int) *CompanyCreate {
-	cc.mutation.AddUserIDs(ids...)
-	return cc
-}
-
-// AddUsers adds the "users" edges to the User entity.
-func (cc *CompanyCreate) AddUsers(u ...*User) *CompanyCreate {
-	ids := make([]int, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return cc.AddUserIDs(ids...)
 }
 
 // Mutation returns the CompanyMutation object of the builder.
@@ -120,22 +104,6 @@ func (cc *CompanyCreate) createSpec() (*Company, *sqlgraph.CreateSpec) {
 	if value, ok := cc.mutation.Domain(); ok {
 		_spec.SetField(company.FieldDomain, field.TypeString, value)
 		_node.Domain = value
-	}
-	if nodes := cc.mutation.UsersIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   company.UsersTable,
-			Columns: company.UsersPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
