@@ -30,8 +30,35 @@ func RegisterUserGroup(r *gin.RouterGroup) {
 	{
 		userGroup.GET("/", userH.All)
 		userGroup.GET("/:id", userH.FindById)
+		userGroup.GET("/:id/teams", userH.GetUserTeams)
 		userGroup.POST("/", userH.Create)
 	}
+}
+
+func (u *UserHandler) GetUserTeams(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Get the user by ID
+	user, err := u.db.User.Get(c, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Query for the user's teams
+	teams, err := user.QueryTeams().All(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user's teams"})
+		return
+	}
+
+	// Return the user's teams
+	c.JSON(http.StatusOK, gin.H{"teams": teams})
 }
 
 func (u *UserHandler) Create(c *gin.Context) {
