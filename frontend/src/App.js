@@ -4,16 +4,18 @@ import { useState } from "react";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [userTeams, setUserTeams] = useState(null);
   const handleSignInA = () => {
     setUser({
       email: "usera@emailchaser.com",
     });
   };
-  const handleSignInB = () => {
+  const handleSignInB = async () => {
     setUser({
       email: "userb@emailchaser.com",
     });
   };
+
   return (
     <>
       <Navbar user={user} />
@@ -21,12 +23,22 @@ function App() {
         <Button onClick={handleSignInA} variant="contained">
           Login As User A
         </Button>
-        <Button sx={{ ml: 1 }} onClick={handleSignInB} variant="contained">
+        <Button
+          sx={{ ml: 1 }}
+          onClick={() => handleSignInB()}
+          variant="contained"
+        >
           Login As User B
         </Button>
         {user && (
           <Box>
             <h5>Signed in as:</h5>
+            <code>{JSON.stringify(user)}</code>
+          </Box>
+        )}
+        {userTeams && (
+          <Box>
+            <h5>UserTeams:</h5>
             <code>{JSON.stringify(user)}</code>
           </Box>
         )}
