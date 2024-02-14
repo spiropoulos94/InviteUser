@@ -1,4 +1,4 @@
-import { Box, Button } from "@mui/material";
+import { Box, Button, Card } from "@mui/material";
 import Navbar from "./components/Navbar";
 import { useEffect, useState } from "react";
 import { getUserByEmail, getUsers } from "./services/backend";
@@ -6,6 +6,7 @@ import { getUserByEmail, getUsers } from "./services/backend";
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
   const [userTeams, setUserTeams] = useState(null);
+  const [currentUserData, setCurrentUserData] = useState(null);
 
   const handleSignInA = async () => {
     setLoggedUser("usera@emailchaser.com");
@@ -17,13 +18,13 @@ function App() {
 
   const fetchTeamData = async () => {
     const data = await getUserByEmail(loggedUser);
-    const currentUser = data.users[0];
+    const currentUserData = data.users[0];
 
-    if (!currentUser) {
+    if (!currentUserData) {
       alert("this user has not signed up yet");
     }
 
-    console.log({ currentUser });
+    setCurrentUserData(currentUserData);
   };
 
   return (
@@ -51,6 +52,16 @@ function App() {
             <Button onClick={fetchTeamData} variant="outlined">
               Get User Team
             </Button>
+            {currentUserData && (
+              <Box>
+                <h5>Teams:</h5>
+                {currentUserData?.edges?.teams.map((t) => (
+                  <Card key={t} sx={{ maxWidth: 120, p: 2 }}>
+                    {t.name}
+                  </Card>
+                ))}
+              </Box>
+            )}
           </Box>
         )}
       </Box>
