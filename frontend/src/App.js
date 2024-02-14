@@ -19,8 +19,8 @@ function App() {
 
   useEffect(() => {
     if (user && user.email) {
-      getUserByEmail(user, "test");
-      getUsers(user);
+      getUserByEmail(user, "usera@emailchaser.com");
+      // getUsers(user);
     }
   }, [user]);
 

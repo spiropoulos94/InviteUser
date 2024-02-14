@@ -1,4 +1,5 @@
 import { setupApiInstance } from "./api";
+import qs from "qs";
 
 const BackendClient = setupApiInstance({
   baseURL: `http://localhost:8080`, // this is a proxy to the narrowin server
@@ -8,7 +9,7 @@ const BackendClient = setupApiInstance({
 });
 
 export const makeUserGetRequest = async (
-  user = null,
+  loggedInUserMail = null,
   endpoint,
   queryparams = {}
 ) => {
@@ -16,8 +17,11 @@ export const makeUserGetRequest = async (
     const response = await BackendClient.request({
       url: endpoint,
       params: queryparams,
+      paramsSerializer: function (params) {
+        return qs.stringify(params, { encode: false });
+      },
       headers: {
-        "user-email": user?.email,
+        "user-email": loggedInUserMail,
       },
     });
 
@@ -29,12 +33,12 @@ export const makeUserGetRequest = async (
   }
 };
 
-export const getUsers = async (user) => {
+export const getUsers = async (loggedInUserMail) => {
   const endpoint = "api/users/";
-  return await makeUserGetRequest(user, endpoint);
+  return await makeUserGetRequest(loggedInUserMail, endpoint);
 };
 
-export const getUserByEmail = async (user, email) => {
+export const getUserByEmail = async (loggedInUserMail, email) => {
   const endpoint = `api/users/`;
-  return await makeUserGetRequest(user, endpoint, { email });
+  return await makeUserGetRequest(loggedInUserMail, endpoint, { email });
 };
