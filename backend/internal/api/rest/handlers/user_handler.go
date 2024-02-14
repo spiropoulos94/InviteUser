@@ -123,7 +123,7 @@ func (u *UserHandler) All(c *gin.Context) {
 	email := c.Query("email")
 	if email != "" {
 		// Filter users by email
-		users, err := u.db.User.Query().
+		users, err := u.db.User.Query().WithTeams().
 			Where(user.EmailEQ(email)).
 			All(c)
 		if err != nil {
@@ -135,7 +135,7 @@ func (u *UserHandler) All(c *gin.Context) {
 	}
 
 	// If no email query parameter, return all users
-	users, err := u.db.User.Query().All(c)
+	users, err := u.db.User.Query().WithTeams().All(c)
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})

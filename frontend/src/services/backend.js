@@ -27,6 +27,8 @@ export const makeUserGetRequest = async (
 
     console.log(12);
     console.log(response.data);
+
+    return response.data;
   } catch (error) {
     alert(error?.response?.data?.error);
     // alert(error); // Propagate the error for handling in the calling code
@@ -38,7 +40,9 @@ export const getUsers = async (loggedInUserMail) => {
   return await makeUserGetRequest(loggedInUserMail, endpoint);
 };
 
-export const getUserByEmail = async (loggedInUserMail, email) => {
+export const getUserByEmail = async (loggedInUserMail) => {
   const endpoint = `api/users/`;
-  return await makeUserGetRequest(loggedInUserMail, endpoint, { email });
+  return await makeUserGetRequest(loggedInUserMail, endpoint, {
+    email: loggedInUserMail,
+  });
 };

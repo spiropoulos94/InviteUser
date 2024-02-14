@@ -4,29 +4,31 @@ import { useEffect, useState } from "react";
 import { getUserByEmail, getUsers } from "./services/backend";
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [loggedUser, setLoggedUser] = useState(null);
   const [userTeams, setUserTeams] = useState(null);
-  const handleSignInA = () => {
-    setUser({
-      email: "usera@emailchaser.com",
-    });
-  };
-  const handleSignInB = async () => {
-    setUser({
-      email: "userb@emailchaser.com",
-    });
+
+  const handleSignInA = async () => {
+    setLoggedUser("usera@emailchaser.com");
   };
 
-  useEffect(() => {
-    if (user && user.email) {
-      getUserByEmail(user, "usera@emailchaser.com");
-      // getUsers(user);
+  const handleSignInB = async () => {
+    setLoggedUser("userb@emailchaser.com");
+  };
+
+  const fetchTeamData = async () => {
+    const data = await getUserByEmail(loggedUser);
+    const currentUser = data.users[0];
+
+    if (!currentUser) {
+      alert("this user has not signed up yet");
     }
-  }, [user]);
+
+    console.log({ currentUser });
+  };
 
   return (
     <>
-      <Navbar user={user} />
+      <Navbar user={loggedUser} />
       <Box m={2}>
         <Button onClick={handleSignInA} variant="contained">
           Login As User A
@@ -38,16 +40,17 @@ function App() {
         >
           Login As User B
         </Button>
-        {user && (
+        {loggedUser && (
           <Box>
             <h5>Signed in as:</h5>
-            <code>{JSON.stringify(user)}</code>
+            <code>{JSON.stringify(loggedUser)}</code>
           </Box>
         )}
-        {userTeams && (
-          <Box>
-            <h5>UserTeams:</h5>
-            <code>{JSON.stringify(user)}</code>
+        {loggedUser && (
+          <Box sx={{ mt: 2 }}>
+            <Button onClick={fetchTeamData} variant="outlined">
+              Get User Team
+            </Button>
           </Box>
         )}
       </Box>
