@@ -41,7 +41,7 @@ func (h *InvitationHandler) AcceptInvitation(c *gin.Context) {
 
 	invitationIDstr, err := strconv.Atoi(invitationID)
 	if err != nil {
-		c.JSON(404, gin.H{"error": "Invitation not found"})
+		c.JSON(504, gin.H{"error": "Could not convert invitation id to string"})
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *InvitationHandler) AcceptInvitation(c *gin.Context) {
 
 	if err != nil {
 		// Handle the error, e.g., return 500 if unable to create the user
-		c.JSON(500, gin.H{"error": "Failed to create user"})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *InvitationHandler) AcceptInvitation(c *gin.Context) {
 	}
 
 	// Respond with success message
-	c.JSON(200, gin.H{"message": "Invitation accepted and user added to team"})
+	c.JSON(200, gin.H{"message": "Invitation accepted and user added to team", "user": newUser})
 }
 
 func (h *InvitationHandler) All(c *gin.Context) {
@@ -116,8 +116,20 @@ func (h *InvitationHandler) All(c *gin.Context) {
 
 func (h *InvitationHandler) Create(c *gin.Context) {
 	var inviteInput struct {
-		InviterEmail string `json:"inviter_email" binding:"required,email"`
+		// InviterEmail string `json:"inviter_email" binding:"required,email"`
 		InviteeEmail string `json:"invitee_email" binding:"required,email"`
+	}
+
+	inviterEmailRaw, exist := c.Get("user-email")
+	if !exist {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User inviter email is missing"})
+		return
+	}
+
+	inviterEmail, ok := inviterEmailRaw.(string)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User inviter email is not a string"})
+		return
 	}
 
 	// Bind request body to the inviteInput struct
@@ -131,7 +143,7 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 	// TODO
 
 	// Extract domain from inviter and invitee emails
-	inviterDomain := utils.ExtractDomain(inviteInput.InviterEmail)
+	inviterDomain := utils.ExtractDomain(inviterEmail)
 	inviteeDomain := utils.ExtractDomain(inviteInput.InviteeEmail)
 
 	// Check if the domains are the same
@@ -140,7 +152,7 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	inviterUser, err := h.db.User.Query().Where(user.EmailEQ(inviteInput.InviterEmail)).Only(c)
+	inviterUser, err := h.db.User.Query().Where(user.EmailEQ(inviterEmail)).Only(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Inviter user was not found"})
 		return

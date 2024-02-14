@@ -1,14 +1,43 @@
 package db
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"spiropoulos94/emailchaser/invite/ent"
+	"spiropoulos94/emailchaser/invite/ent/user"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
 
 var database *ent.Client
+
+func CreateFirstUser(email string) error {
+	exists, err := database.User.Query().Where(user.Email(email)).Exist(context.Background())
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		salesTeam, err := database.Team.Create().SetName("Sales").Save(context.Background())
+		if err != nil {
+			return err
+		}
+
+		_, err = database.User.Create().
+			SetName("User A").
+			SetEmail(email).
+			SetPassword("password"). // Set an appropriate password here.
+			AddTeams(salesTeam).
+			Save(context.Background())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func SetupDatabaseClient() {
 	var err error
@@ -21,6 +50,11 @@ func SetupDatabaseClient() {
 	if err := database.Schema.Create(&gin.Context{}); err != nil {
 		defer database.Close()
 		log.Fatalf("failed creating schema resources: %v", err)
+	}
+
+	err = CreateFirstUser("usera@emailchaser.com")
+	if err != nil {
+		fmt.Printf("failed to create user: %v", err)
 	}
 
 }
