@@ -42,7 +42,7 @@ export default function InviteModal({ user }) {
     try {
       const headers = new Headers();
       headers.append("Content-Type", "application/json");
-      headers.append("user-email", user?.email);
+      headers.append("user-email", user);
 
       const response = await fetch("http://localhost:8080/api/invites/", {
         method: "POST",
@@ -67,7 +67,7 @@ export default function InviteModal({ user }) {
   return (
     <>
       <Button
-        disabled={Boolean(!user?.email)}
+        disabled={Boolean(!user)}
         variant="outlined"
         color="inherit"
         onClick={handleClickOpen}
