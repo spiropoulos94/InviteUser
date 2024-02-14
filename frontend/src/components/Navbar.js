@@ -8,7 +8,7 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import InviteModal from "./InviteModal";
 
-export default function Navbar() {
+export default function Navbar({ user }) {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -16,7 +16,7 @@ export default function Navbar() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             EmailChaser
           </Typography>
-          <InviteModal />
+          <InviteModal user={user} />
         </Toolbar>
       </AppBar>
     </Box>

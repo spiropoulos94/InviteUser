@@ -116,8 +116,7 @@ func (h *InvitationHandler) All(c *gin.Context) {
 
 func (h *InvitationHandler) Create(c *gin.Context) {
 	var inviteInput struct {
-		// InviterEmail string `json:"inviter_email" binding:"required,email"`
-		InviteeEmail string `json:"invitee_email" binding:"required,email"`
+		InviteeEmail string `json:"invitee_email" binding:"required"`
 	}
 
 	inviterEmailRaw, exist := c.Get("user-email")

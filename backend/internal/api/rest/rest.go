@@ -11,10 +11,10 @@ func UserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Extract user email from the request header.
 		userEmail := c.GetHeader("user-email")
-		userTeam := c.GetHeader("user-team")
+		// userTeam := c.GetHeader("user-team")
 
 		// If user email is empty, return an error.
-		if userEmail == "" || userTeam == "" {
+		if userEmail == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User email or team not provided in headers"})
 			c.Abort()
 			return
@@ -22,7 +22,7 @@ func UserMiddleware() gin.HandlerFunc {
 
 		// Save user email in the Gin context.
 		c.Set("user-email", userEmail)
-		c.Set("user-team", userTeam)
+		// c.Set("user-team", userTeam)
 
 		// Continue processing the request.
 		c.Next()

@@ -2,44 +2,27 @@ import { Box, Button } from "@mui/material";
 import Navbar from "./components/Navbar";
 import { useState } from "react";
 
-const getUsers = async () => {
-  try {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json");
-    // headers.append("user-email", "usera@emailchaser.com");
-    // headers.append("user-team", "Sales");
-
-    const response = await fetch("http://localhost:8080/api/users/", {
-      headers: headers,
-    }); // Adjusted endpoint
-    const data = await response.json();
-
-    if (data.error) {
-      console.log({ response, data });
-      alert(data.error);
-      throw new Error(data.error);
-    }
-    console.log(data); // Do something with the users data, like updating state in React component
-  } catch (error) {
-    console.error("Error fetching users:", error);
-  }
-};
-
 function App() {
   const [user, setUser] = useState(null);
-  const handleSignIn = () => {
+  const handleSignInA = () => {
     setUser({
-      name: "Nikos Spiropoulos",
-      email: "test@emailchaser.com",
+      email: "usera@emailchaser.com",
     });
-    getUsers();
+  };
+  const handleSignInB = () => {
+    setUser({
+      email: "userb@emailchaser.com",
+    });
   };
   return (
     <>
-      <Navbar />
+      <Navbar user={user} />
       <Box m={2}>
-        <Button onClick={handleSignIn} variant="contained">
+        <Button onClick={handleSignInA} variant="contained">
           Login As User A
+        </Button>
+        <Button sx={{ ml: 1 }} onClick={handleSignInB} variant="contained">
+          Login As User B
         </Button>
         {user && (
           <Box>
