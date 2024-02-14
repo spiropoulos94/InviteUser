@@ -1,6 +1,7 @@
 import { Box, Button } from "@mui/material";
 import Navbar from "./components/Navbar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getUserByEmail, getUsers } from "./services/backend";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -15,6 +16,13 @@ function App() {
       email: "userb@emailchaser.com",
     });
   };
+
+  useEffect(() => {
+    if (user && user.email) {
+      getUserByEmail(user, "test");
+      getUsers(user);
+    }
+  }, [user]);
 
   return (
     <>

@@ -7,22 +7,18 @@ const BackendClient = setupApiInstance({
   },
 });
 
-export const makeUserRequest = async (
+export const makeUserGetRequest = async (
   user = null,
-  method,
   endpoint,
-  bodyParams = {},
-  additionalParams = {}
+  queryparams = {}
 ) => {
   try {
     const response = await BackendClient.request({
-      method: method,
       url: endpoint,
-      data: bodyParams,
+      params: queryparams,
       headers: {
         "user-email": user?.email,
       },
-      ...additionalParams,
     });
 
     console.log(12);
@@ -35,10 +31,10 @@ export const makeUserRequest = async (
 
 export const getUsers = async (user) => {
   const endpoint = "api/users/";
-  return await makeUserRequest(user, "GET", endpoint);
+  return await makeUserGetRequest(user, endpoint);
 };
 
 export const getUserByEmail = async (user, email) => {
-  const endpoint = `api/users?email=${email}`;
-  return await makeUserRequest(user, "GET", endpoint);
+  const endpoint = `api/users/`;
+  return await makeUserGetRequest(user, endpoint, { email });
 };
