@@ -15,7 +15,7 @@ func UserMiddleware() gin.HandlerFunc {
 
 		// If user email is empty, return an error.
 		if userEmail == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "User email or team not provided in headers"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User email not provided in headers"})
 			c.Abort()
 			return
 		}
