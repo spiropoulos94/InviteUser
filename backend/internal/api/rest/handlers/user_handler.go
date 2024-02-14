@@ -119,6 +119,7 @@ func (u *UserHandler) Create(c *gin.Context) {
 }
 
 func (u *UserHandler) All(c *gin.Context) {
+
 	users, err := u.db.User.Query().All(c)
 	if err != nil {
 		fmt.Println(err)
