@@ -6,17 +6,20 @@ const getUsers = async () => {
   try {
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
-    headers.append("user-email", "usera@emailchaser.com");
-    headers.append("user-team", "Sales");
+    // headers.append("user-email", "usera@emailchaser.com");
+    // headers.append("user-team", "Sales");
 
     const response = await fetch("http://localhost:8080/api/users/", {
       headers: headers,
     }); // Adjusted endpoint
-    if (!response.ok) {
-      throw new Error("Failed to fetch users");
+    const data = await response.json();
+
+    if (data.error) {
+      console.log({ response, data });
+      alert(data.error);
+      throw new Error(data.error);
     }
-    const users = await response.json();
-    console.log(users); // Do something with the users data, like updating state in React component
+    console.log(data); // Do something with the users data, like updating state in React component
   } catch (error) {
     console.error("Error fetching users:", error);
   }
