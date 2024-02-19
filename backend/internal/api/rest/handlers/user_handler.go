@@ -119,8 +119,23 @@ func (u *UserHandler) Create(c *gin.Context) {
 }
 
 func (u *UserHandler) All(c *gin.Context) {
+	// Check if email query parameter is present
+	email := c.Query("email")
+	if email != "" {
+		// Filter users by email
+		users, err := u.db.User.Query().WithTeams().
+			Where(user.EmailEQ(email)).
+			All(c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"users": users})
+		return
+	}
 
-	users, err := u.db.User.Query().All(c)
+	// If no email query parameter, return all users
+	users, err := u.db.User.Query().WithTeams().All(c)
 	if err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
@@ -128,6 +143,7 @@ func (u *UserHandler) All(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"users": users})
 }
+
 func (u *UserHandler) FindById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)

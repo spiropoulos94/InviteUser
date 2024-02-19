@@ -11,10 +11,10 @@ func UserMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Extract user email from the request header.
 		userEmail := c.GetHeader("user-email")
-		userTeam := c.GetHeader("user-team")
+		// userTeam := c.GetHeader("user-team")
 
 		// If user email is empty, return an error.
-		if userEmail == "" || userTeam == "" {
+		if userEmail == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User email not provided in headers"})
 			c.Abort()
 			return
@@ -22,15 +22,34 @@ func UserMiddleware() gin.HandlerFunc {
 
 		// Save user email in the Gin context.
 		c.Set("user-email", userEmail)
-		c.Set("user-team", userTeam)
+		// c.Set("user-team", userTeam)
 
 		// Continue processing the request.
 		c.Next()
 	}
 }
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "*")
+		c.Header("Access-Control-Allow-Methods", "POST,HEAD,PATCH, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func NewRouter() *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+
+	r.Use(CORSMiddleware())
 
 	r.Use(UserMiddleware())
 

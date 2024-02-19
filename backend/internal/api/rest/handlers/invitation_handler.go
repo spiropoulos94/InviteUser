@@ -31,7 +31,32 @@ func RegisterInvitationGroup(r *gin.RouterGroup) {
 		invitationGroup.GET("/", invitationH.All)
 		invitationGroup.POST("/", invitationH.Create)
 		invitationGroup.POST("/:id/accept", invitationH.AcceptInvitation)
+		invitationGroup.GET("/:id", invitationH.GetInvitation)
 	}
+}
+
+func (h *InvitationHandler) GetInvitation(c *gin.Context) {
+	// Get the invitation ID from the request
+	invitationID := c.Param("id")
+
+	invitationIDstr, err := strconv.Atoi(invitationID)
+	if err != nil {
+		c.JSON(504, gin.H{"error": "Could not convert invitation id to string"})
+		return
+	}
+
+	// Retrieve the invitation from the database
+	invitation, err := h.db.Invitation.Query().
+		Where(invitation.ID(invitationIDstr)).
+		Only(c)
+
+	if err != nil {
+		// Handle the error, e.g., return 404 if invitation is not found
+		c.JSON(404, gin.H{"error": "Invitation not found"})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"invitation": invitation})
 }
 
 func (h *InvitationHandler) AcceptInvitation(c *gin.Context) {
@@ -116,8 +141,7 @@ func (h *InvitationHandler) All(c *gin.Context) {
 
 func (h *InvitationHandler) Create(c *gin.Context) {
 	var inviteInput struct {
-		// InviterEmail string `json:"inviter_email" binding:"required,email"`
-		InviteeEmail string `json:"invitee_email" binding:"required,email"`
+		InviteeEmail string `json:"invitee_email" binding:"required"`
 	}
 
 	inviterEmailRaw, exist := c.Get("user-email")

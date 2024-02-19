@@ -8,7 +8,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 
-export default function InviteModal() {
+export default function InviteModal({ user }) {
   const [email, setEmail] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -23,14 +23,55 @@ export default function InviteModal() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log({ email });
-    handleClose();
+
+    const data = await inviteUser(email);
+    console.log({ data }, "apo to invite user");
+    if (data.error) {
+      alert(data.error);
+    } else {
+      alert("User invited successfully!");
+      handleClose();
+    }
+
+    // handleClose();
+  };
+
+  const inviteUser = async (userEmail) => {
+    try {
+      const headers = new Headers();
+      headers.append("Content-Type", "application/json");
+      headers.append("user-email", user);
+
+      const response = await fetch("http://localhost:8080/api/invites/", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify({
+          invitee_email: userEmail,
+        }),
+      }); // Adjusted endpoint
+      const data = await response.json();
+
+      if (data.error) {
+        console.log({ response, data });
+        throw new Error(data.error);
+      }
+
+      return data;
+    } catch (error) {
+      return { error: "Error inviting user:", error };
+    }
   };
 
   return (
     <>
-      <Button variant="outlined" color="inherit" onClick={handleClickOpen}>
+      <Button
+        disabled={Boolean(!user)}
+        variant="outlined"
+        color="inherit"
+        onClick={handleClickOpen}
+      >
         Invite your Team
       </Button>
       <Dialog
